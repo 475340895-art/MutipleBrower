@@ -2,8 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FingerprintBrowser.Models;
 
-public enum BrowserStatus { Idle = 0, Starting = 1, Running = 2, Error = 3 }
-public enum ProxyStatus { Unknown = 0, Available = 1, Unavailable = 2 }
+public enum BrowserStatus { Idle = 0, Starting = 1, Running = 2, Stopped = 3, Error = 4 }
+public enum ProxyStatus { Unknown = 0, Available = 1, Unavailable = 2, Testing = 3 }
 public enum ProxyType { HTTP = 0, HTTPS = 1, SOCKS5 = 2 }
 
 public class BrowserEnvironment

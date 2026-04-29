@@ -48,6 +48,11 @@ public static class AppConstants
     public const int ProxyTestTimeout = 15000;
 
     /// <summary>
+    /// 最大并发数
+    /// </summary>
+    public const int MaxConcurrency = 10;
+
+    /// <summary>
     /// 默认浏览器分辨率
     /// </summary>
     public static readonly (int Width, int Height) DefaultResolution = (1920, 1080);

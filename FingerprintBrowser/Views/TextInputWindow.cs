@@ -8,7 +8,7 @@ public class TextInputWindow : HandyControl.Controls.Window
 {
     public string InputText { get; private set; } = "";
     
-    private TextBox _textBox = null!;
+    private System.Windows.Controls.TextBox _textBox = null!;
     
     public TextInputWindow(string title, string label, string defaultValue = "")
     {

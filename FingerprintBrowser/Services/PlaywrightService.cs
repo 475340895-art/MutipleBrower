@@ -62,9 +62,13 @@ public class PlaywrightService
         return null;
     }
     
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _browser?.Dispose();
+        if (_browser != null)
+        {
+            await _browser.CloseAsync();
+            _browser = null;
+        }
         _playwright?.Dispose();
     }
 }

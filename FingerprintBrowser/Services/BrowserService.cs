@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using FingerprintBrowser.Models;
+using Microsoft.Playwright;
 
 namespace FingerprintBrowser.Services;
 

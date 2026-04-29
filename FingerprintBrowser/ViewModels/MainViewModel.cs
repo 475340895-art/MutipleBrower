@@ -5,6 +5,7 @@ using System.Windows;
 using FingerprintBrowser.Data;
 using FingerprintBrowser.Models;
 using FingerprintBrowser.Services;
+using FingerprintBrowser.Views;
 using Microsoft.EntityFrameworkCore;
 
 namespace FingerprintBrowser.ViewModels;
@@ -79,7 +80,7 @@ public class MainViewModel : INotifyPropertyChanged
         {
             IsLoading = true;
             StatusMessage = "正在加载数据...";
-            await DatabaseInitializer.InitializeAsync(_db);
+            await DatabaseInitializer.InitializeAsync();
             await LoadGroupsAsync();
             await LoadEnvironmentsAsync();
             StatusMessage = "就绪";
