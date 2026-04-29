@@ -28,15 +28,15 @@
     <hc:Window.NonClientAreaContent>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,140,0">
             <!-- 最小化 -->
-            <Button Style="{StaticResource ButtonIcon}" Command="{Binding Source={x:Static hc:WindowCommands.Minimize}}" Padding="10">
+            <Button Style="{StaticResource ButtonIcon}" Click="MinimizeButton_Click" Padding="10" ToolTip="最小化">
                 <Path Data="M4,13H20" Stroke="{DynamicResource ForegroundBrush}" StrokeThickness="1.5"/>
             </Button>
             <!-- 最大化/还原 -->
-            <Button Style="{StaticResource ButtonIcon}" Command="{Binding Source={x:Static hc:WindowCommands.Maximize}}" Padding="10">
-                <Path Data="M4,4H20V20H4V4M4,9H20M9,4V9M15,15V20M9,20H15" Stroke="{DynamicResource ForegroundBrush}" StrokeThickness="1.5" Visibility="Collapsed"/>
+            <Button Style="{StaticResource ButtonIcon}" Click="MaximizeButton_Click" Padding="10" ToolTip="最大化">
+                <Path x:Name="MaximizeIcon" Data="M4,4H20V20H4V4Z" Stroke="{DynamicResource ForegroundBrush}" StrokeThickness="1.5"/>
             </Button>
             <!-- 关闭 -->
-            <Button Style="{StaticResource ButtonIcon}" Command="{Binding Source={x:Static hc:WindowCommands.Close}}" Padding="10">
+            <Button Style="{StaticResource ButtonIcon}" Click="CloseButton_Click" Padding="10" ToolTip="关闭">
                 <Path Data="M6,6L18,18M6,18L18,6" Stroke="{DynamicResource DangerBrush}" StrokeThickness="1.5"/>
             </Button>
         </StackPanel>

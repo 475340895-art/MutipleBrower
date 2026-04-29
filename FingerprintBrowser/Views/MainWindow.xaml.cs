@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 using FingerprintBrowser.ViewModels;
 using Serilog;
 
@@ -9,6 +10,8 @@ namespace FingerprintBrowser.Views;
 /// </summary>
 public partial class MainWindow : HandyControl.Controls.Window
 {
+    public bool IsMaximized { get; set; }
+
     public MainWindow()
     {
         InitializeComponent();
@@ -19,6 +22,24 @@ public partial class MainWindow : HandyControl.Controls.Window
     {
         Log.Information("主窗口已关闭");
         base.OnClosed(e);
+    }
+
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void MaximizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (WindowState == WindowState.Maximized)
+            WindowState = WindowState.Normal;
+        else
+            WindowState = WindowState.Maximized;
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
     }
 
     /// <summary>
