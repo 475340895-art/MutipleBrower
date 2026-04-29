@@ -144,10 +144,6 @@ public class PlaywrightService
         {
             _playwright ??= await Playwright.CreateAsync();
 
-            // 创建浏览器上下文（隔离环境）
-            var contextOptions = CreateContextOptions(environment);
-            var context = await _playwright.Chromium.NewContextAsync(contextOptions);
-
             // 启动浏览器
             var browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {
@@ -159,6 +155,10 @@ public class PlaywrightService
                     "--no-sandbox"
                 }
             });
+
+            // 创建浏览器上下文（隔离环境）
+            var contextOptions = CreateContextOptions(environment);
+            var context = await browser.NewContextAsync(contextOptions);
 
             // 创建包装器
             var browserImpl = new PlaywrightBrowser(_playwright, browser, context);
@@ -172,6 +172,13 @@ public class PlaywrightService
         catch (Exception ex)
         {
             Log.Error(ex, "创建浏览器实例失败");
+            return null;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
             return null;
         }
         finally
