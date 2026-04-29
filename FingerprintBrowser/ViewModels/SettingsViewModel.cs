@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -128,13 +129,13 @@ public partial class SettingsViewModel : ObservableObject
         {
             var skin = value switch
             {
-                "深色" => SkinType.Dark,
-                "浅色" => SkinType.Light,
-                "深蓝" => SkinType.DarkBlue,
-                _ => SkinType.Dark
+                "深色" => HandyControl.Themes.SkinType.Dark,
+                "浅色" => HandyControl.Themes.SkinType.Light,
+                "深蓝" => HandyControl.Themes.SkinType.DarkBlue,
+                _ => HandyControl.Themes.SkinType.Dark
             };
 
-            ThemeManager.Current.ApplicationTheme = skin;
+            HandyControl.Themes.ThemeManager.Current.ApplicationTheme = skin;
         }
         catch (Exception ex)
         {

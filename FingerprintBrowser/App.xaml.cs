@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using FingerprintBrowser.Data;
 using FingerprintBrowser.Services;
