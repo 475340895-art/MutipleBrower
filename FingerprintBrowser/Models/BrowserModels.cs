@@ -1,204 +1,142 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace FingerprintBrowser.Models
+namespace FingerprintBrowser.Models;
+
+public enum BrowserStatus
 {
-    /// <summary>
-    /// 浏览器环境状态枚举
-    /// </summary>
-    public enum BrowserEnvironmentStatus
-    {
-        Idle = 0,           // 空闲
-        Starting = 1,        // 启动中
-        Running = 2,         // 运行中
-        Stopping = 3,       // 停止中
-        Error = 4            // 错误
-    }
+    Idle = 0,
+    Starting = 1,
+    Running = 2,
+    Error = 3,
+    Stopping = 4
+}
 
-    /// <summary>
-    /// 代理类型枚举
-    /// </summary>
-    public enum ProxyType
-    {
-        None = 0,
-        HTTP = 1,
-        HTTPS = 2,
-        SOCKS5 = 3
-    }
+public enum ProxyStatus
+{
+    Unknown = 0,
+    Available = 1,
+    Unavailable = 2,
+    Testing = 3
+}
 
-    /// <summary>
-    /// 浏览器类型
-    /// </summary>
-    public enum BrowserTypeEnum
-    {
-        Chromium = 0,
-        Firefox = 1,
-        WebKit = 2
-    }
+public class BrowserEnvironment
+{
+    [Key]
+    public int Id { get; set; }
 
-    /// <summary>
-    /// 浏览器环境配置
-    /// </summary>
-    public class BrowserEnvironment
-    {
-        [Key]
-        public int Id { get; set; }
+    [Required]
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
 
-        [Required]
-        [MaxLength(100)]
-        public string Name { get; set; } = string.Empty;
+    public int? GroupId { get; set; }
 
-        public int GroupId { get; set; }
+    [ForeignKey("GroupId")]
+    public EnvironmentGroup? Group { get; set; }
 
-        [ForeignKey(nameof(GroupId))]
-        public EnvironmentGroup? Group { get; set; }
+    // 浏览器指纹配置
+    [MaxLength(50)]
+    public string BrowserType { get; set; } = "Chromium";
 
-        public int? ProxyId { get; set; }
+    [MaxLength(50)]
+    public string Resolution { get; set; } = "1920x1080";
 
-        [ForeignKey(nameof(ProxyId))]
-        public ProxyConfig? ProxyConfig { get; set; }
+    [MaxLength(100)]
+    public string UserAgent { get; set; } = string.Empty;
 
-        // 核心配置
-        [MaxLength(50)]
-        public string BrowserType { get; set; } = "Chromium";
+    [MaxLength(100)]
+    public string Timezone { get; set; } = "Asia/Shanghai";
 
-        [MaxLength(50)]
-        public string Resolution { get; set; } = "1920x1080";
+    [MaxLength(200)]
+    public string Languages { get; set; } = "zh-CN,zh,en-US,en";
 
-        [MaxLength(100)]
-        public string Timezone { get; set; } = "Asia/Shanghai";
+    public bool EnableWebRTC { get; set; } = true;
+    public bool EnableCookies { get; set; } = true;
+    public bool EnableJavaScript { get; set; } = true;
 
-        [MaxLength(200)]
-        public string Languages { get; set; } = "zh-CN,zh,en-US,en";
+    [MaxLength(100)]
+    public string WebGLVendor { get; set; } = string.Empty;
 
-        [MaxLength(500)]
-        public string UserAgent { get; set; } = string.Empty;
+    [MaxLength(100)]
+    public string WebGLRenderer { get; set; } = string.Empty;
 
-        [MaxLength(50)]
-        public string WebGLVendor { get; set; } = "Intel Inc.";
+    public int? ProxyId { get; set; }
 
-        [MaxLength(50)]
-        public string WebGLRenderer { get; set; } = "Intel Iris OpenGL Engine";
+    [ForeignKey("ProxyId")]
+    public ProxyConfig? Proxy { get; set; }
 
-        public bool EnableWebRTC { get; set; } = true;
-        public bool EnableCookies { get; set; } = true;
-        public bool EnableJavaScript { get; set; } = true;
+    [MaxLength(500)]
+    public string StartupUrl { get; set; } = "https://www.google.com";
 
-        // 启动URL
-        [MaxLength(1000)]
-        public string StartupUrl { get; set; } = "https://www.google.com";
+    [MaxLength(500)]
+    public string Remark { get; set; } = string.Empty;
 
-        // 备注
-        [MaxLength(500)]
-        public string Remark { get; set; } = string.Empty;
+    public BrowserStatus Status { get; set; } = BrowserStatus.Idle;
 
-        // 状态
-        public BrowserEnvironmentStatus Status { get; set; } = BrowserEnvironmentStatus.Idle;
-        public DateTime? LastRunTime { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+    [MaxLength(200)]
+    public string StatusMessage { get; set; } = string.Empty;
 
-        // 运行时的浏览器实例ID
-        [NotMapped]
-        public int? RunningBrowserId { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
 
-        // 计算属性
-        [NotMapped]
-        public string StatusText => Status switch
-        {
-            BrowserEnvironmentStatus.Idle => "空闲",
-            BrowserEnvironmentStatus.Starting => "启动中",
-            BrowserEnvironmentStatus.Running => "运行中",
-            BrowserEnvironmentStatus.Stopping => "停止中",
-            BrowserEnvironmentStatus.Error => "错误",
-            _ => "未知"
-        };
+    // 运行时的浏览器实例ID
+    public int? RunningBrowserId { get; set; }
 
-        [NotMapped]
-        public string GroupName => Group?.Name ?? "未分组";
+    // 代理信息（运行时使用）
+    [NotMapped]
+    public string? ProxyInfo => Proxy != null ? $"{Proxy.Host}:{Proxy.Port}" : null;
+}
 
-        [NotMapped]
-        public string ProxyInfo => ProxyConfig != null
-            ? $"{ProxyConfig.Host}:{ProxyConfig.Port}"
-            : "无代理";
+public class EnvironmentGroup
+{
+    [Key]
+    public int Id { get; set; }
 
-        [NotMapped]
-        public string DisplayResolution => Resolution;
-    }
+    [Required]
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
 
-    /// <summary>
-    /// 环境分组
-    /// </summary>
-    public class EnvironmentGroup
-    {
-        [Key]
-        public int Id { get; set; }
+    [MaxLength(20)]
+    public string Color { get; set; } = "#5B8DEF";
 
-        [Required]
-        [MaxLength(100)]
-        public string Name { get; set; } = string.Empty;
+    public int SortOrder { get; set; } = 0;
 
-        [MaxLength(20)]
-        public string Color { get; set; } = "#1890ff";
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-        public int SortOrder { get; set; } = 0;
+    public ICollection<BrowserEnvironment> Environments { get; set; } = new List<BrowserEnvironment>();
+}
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+public class ProxyConfig
+{
+    [Key]
+    public int Id { get; set; }
 
-        public ICollection<BrowserEnvironment> Environments { get; set; } = new List<BrowserEnvironment>();
-    }
+    [Required]
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
 
-    /// <summary>
-    /// 代理配置
-    /// </summary>
-    public class ProxyConfig
-    {
-        [Key]
-        public int Id { get; set; }
+    [MaxLength(50)]
+    public string Type { get; set; } = "HTTP"; // HTTP, HTTPS, SOCKS5
 
-        [Required]
-        [MaxLength(200)]
-        public string Name { get; set; } = string.Empty;
+    [Required]
+    [MaxLength(200)]
+    public string Host { get; set; } = string.Empty;
 
-        [Required]
-        [MaxLength(200)]
-        public string Host { get; set; } = string.Empty;
+    public int Port { get; set; }
 
-        public int Port { get; set; }
+    [MaxLength(100)]
+    public string? Username { get; set; }
 
-        [MaxLength(50)]
-        public string Protocol { get; set; } = "HTTP";
+    [MaxLength(100)]
+    public string? Password { get; set; }
 
-        [MaxLength(100)]
-        public string Username { get; set; } = string.Empty;
+    public ProxyStatus Status { get; set; } = ProxyStatus.Unknown;
 
-        [MaxLength(100)]
-        public string Password { get; set; } = string.Empty;
+    public int Latency { get; set; } = 0;
 
-        [MaxLength(200)]
-        public string Remark { get; set; } = string.Empty;
+    [MaxLength(200)]
+    public string Remark { get; set; } = string.Empty;
 
-        // 状态
-        public ProxyStatus Status { get; set; } = ProxyStatus.Untested;
-        public int? Latency { get; set; }
-        public DateTime? LastTestTime { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
-
-        // 关联的环境
-        public ICollection<BrowserEnvironment> Environments { get; set; } = new List<BrowserEnvironment>();
-    }
-
-    /// <summary>
-    /// 代理状态
-    /// </summary>
-    public enum ProxyStatus
-    {
-        Untested = 0,    // 未测试
-        Valid = 1,       // 有效
-        Invalid = 2,    // 无效
-        Timeout = 3     // 超时
-    }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime? LastTestedAt { get; set; }
 }

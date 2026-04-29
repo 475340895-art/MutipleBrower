@@ -1,161 +1,227 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using FingerprintBrowser.Data;
 using FingerprintBrowser.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Playwright;
+using Serilog;
 
-namespace FingerprintBrowser.Services
+namespace FingerprintBrowser.Services;
+
+public class BrowserService
 {
-    public class BrowserService
+    private static BrowserService? _instance;
+    private static readonly object _lock = new();
+
+    private readonly Dictionary<int, IBrowser> _runningBrowsers = new();
+    private readonly PlaywrightService _playwrightService;
+
+    public static BrowserService Instance
     {
-        private readonly BrowserDbContext _db;
-        private readonly PlaywrightService _playwrightService;
-        private readonly Dictionary<int, IBrowser> _runningBrowsers = new();
-
-        public BrowserService(BrowserDbContext db)
+        get
         {
-            _db = db;
-            _playwrightService = PlaywrightService.Instance;
+            if (_instance == null)
+            {
+                lock (_lock)
+                {
+                    _instance ??= new BrowserService();
+                }
+            }
+            return _instance;
         }
+    }
 
-        public async Task<BrowserEnvironment?> GetEnvironmentByIdAsync(int id)
-        {
-            return await _db.Environments
-                .Include(e => e.Group)
-                .Include(e => e.ProxyConfig)
-                .FirstOrDefaultAsync(e => e.Id == id);
-        }
+    private BrowserService()
+    {
+        _playwrightService = PlaywrightService.Instance;
+    }
 
-        public async Task<List<BrowserEnvironment>> GetEnvironmentsByGroupAsync(int groupId)
+    public async Task<BrowserEnvironment> CreateEnvironmentAsync(BrowserEnvironment env)
+    {
+        try
         {
-            return await _db.Environments
-                .Include(e => e.ProxyConfig)
-                .Where(e => e.GroupId == groupId)
-                .ToListAsync();
-        }
-
-        public async Task<BrowserEnvironment> CreateEnvironmentAsync(BrowserEnvironment env)
-        {
-            env.CreatedAt = DateTime.Now;
-            env.UpdatedAt = DateTime.Now;
-            _db.Environments.Add(env);
-            await _db.SaveChangesAsync();
+            using var db = new BrowserDbContext();
+            db.Environments.Add(env);
+            await db.SaveChangesAsync();
             return env;
         }
-
-        public async Task UpdateEnvironmentAsync(BrowserEnvironment env)
+        catch (Exception ex)
         {
-            env.UpdatedAt = DateTime.Now;
-            _db.Environments.Update(env);
-            await _db.SaveChangesAsync();
+            Log.Error(ex, "创建环境失败");
+            throw;
         }
+    }
 
-        public async Task DeleteEnvironmentAsync(int id)
+    public async Task<BrowserEnvironment?> GetEnvironmentAsync(int id)
+    {
+        using var db = new BrowserDbContext();
+        return await db.Environments
+            .Include(e => e.Group)
+            .Include(e => e.Proxy)
+            .FirstOrDefaultAsync(e => e.Id == id);
+    }
+
+    public async Task<List<BrowserEnvironment>> GetAllEnvironmentsAsync()
+    {
+        using var db = new BrowserDbContext();
+        return await db.Environments
+            .Include(e => e.Group)
+            .Include(e => e.Proxy)
+            .ToListAsync();
+    }
+
+    public async Task<bool> UpdateEnvironmentAsync(BrowserEnvironment env)
+    {
+        try
         {
-            var env = await _db.Environments.FindAsync(id);
-            if (env != null)
+            using var db = new BrowserDbContext();
+            db.Environments.Update(env);
+            await db.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "更新环境失败");
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteEnvironmentAsync(int id)
+    {
+        try
+        {
+            using var db = new BrowserDbContext();
+            var env = await db.Environments.FindAsync(id);
+            if (env == null) return false;
+
+            if (_runningBrowsers.ContainsKey(id))
             {
-                if (_runningBrowsers.ContainsKey(id))
-                {
-                    await CloseBrowserAsync(id);
-                }
-                _db.Environments.Remove(env);
-                await _db.SaveChangesAsync();
+                await CloseBrowserAsync(id);
             }
-        }
 
-        public async Task<BrowserEnvironment> CopyEnvironmentAsync(int id)
+            db.Environments.Remove(env);
+            await db.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
         {
-            var original = await GetEnvironmentByIdAsync(id);
-            if (original == null)
-                throw new InvalidOperationException("环境不存在");
-
-            var copy = new BrowserEnvironment
-            {
-                Name = $"{original.Name} (副本)",
-                GroupId = original.GroupId,
-                ProxyId = original.ProxyId,
-                BrowserType = original.BrowserType,
-                Resolution = original.Resolution,
-                Timezone = original.Timezone,
-                Languages = original.Languages,
-                UserAgent = original.UserAgent,
-                WebGLVendor = original.WebGLVendor,
-                WebGLRenderer = original.WebGLRenderer,
-                EnableWebRTC = original.EnableWebRTC,
-                EnableCookies = original.EnableCookies,
-                EnableJavaScript = original.EnableJavaScript,
-                StartupUrl = original.StartupUrl,
-                Remark = original.Remark
-            };
-
-            return await CreateEnvironmentAsync(copy);
+            Log.Error(ex, "删除环境失败");
+            return false;
         }
+    }
 
-        public async Task LaunchBrowserAsync(BrowserEnvironment env)
+    public async Task<BrowserEnvironment> CopyEnvironmentAsync(int id)
+    {
+        using var db = new BrowserDbContext();
+        var source = await db.Environments.FindAsync(id);
+        if (source == null)
+            throw new ArgumentException($"环境 {id} 不存在");
+
+        var copy = new BrowserEnvironment
+        {
+            Name = source.Name + " (副本)",
+            GroupId = source.GroupId,
+            BrowserType = source.BrowserType,
+            Resolution = source.Resolution,
+            UserAgent = source.UserAgent,
+            Timezone = source.Timezone,
+            Languages = source.Languages,
+            EnableWebRTC = source.EnableWebRTC,
+            EnableCookies = source.EnableCookies,
+            EnableJavaScript = source.EnableJavaScript,
+            WebGLVendor = source.WebGLVendor,
+            WebGLRenderer = source.WebGLRenderer,
+            ProxyId = source.ProxyId,
+            StartupUrl = source.StartupUrl,
+            Remark = source.Remark,
+            CreatedAt = DateTime.Now,
+            UpdatedAt = DateTime.Now
+        };
+
+        db.Environments.Add(copy);
+        await db.SaveChangesAsync();
+        return copy;
+    }
+
+    public async Task<bool> LaunchBrowserAsync(BrowserEnvironment env)
+    {
+        try
         {
             if (_runningBrowsers.ContainsKey(env.Id))
             {
-                return;
+                Log.Warning("浏览器已在运行: {Name}", env.Name);
+                return true;
             }
 
             var browser = await _playwrightService.LaunchBrowserAsync(env);
-            _runningBrowsers[env.Id] = browser;
+            if (browser != null)
+            {
+                _runningBrowsers[env.Id] = browser;
+                env.RunningBrowserId = env.Id;
+                return true;
+            }
 
-            env.Status = BrowserEnvironmentStatus.Running;
-            env.LastRunTime = DateTime.Now;
-            await UpdateEnvironmentAsync(env);
+            return false;
         }
-
-        public async Task CloseBrowserAsync(int envId)
+        catch (Exception ex)
         {
-            if (_runningBrowsers.TryGetValue(envId, out var browser))
+            Log.Error(ex, "启动浏览器失败: {Name}", env.Name);
+            return false;
+        }
+    }
+
+    public async Task CloseBrowserAsync(int environmentId)
+    {
+        try
+        {
+            if (_runningBrowsers.TryGetValue(environmentId, out var browser))
             {
                 await browser.CloseAsync();
-                _runningBrowsers.Remove(envId);
-            }
+                _runningBrowsers.Remove(environmentId);
 
-            var env = await GetEnvironmentByIdAsync(envId);
-            if (env != null)
-            {
-                env.Status = BrowserEnvironmentStatus.Idle;
-                env.RunningBrowserId = null;
-                await UpdateEnvironmentAsync(env);
-            }
-        }
-
-        public async Task OpenUrlAsync(int envId, string url)
-        {
-            if (_runningBrowsers.TryGetValue(envId, out var browser))
-            {
-                var pages = browser.Contexts.SelectMany(c => c.Pages).ToList();
-                if (pages.Any())
+                using var db = new BrowserDbContext();
+                var env = await db.Environments.FindAsync(environmentId);
+                if (env != null)
                 {
-                    await pages.First().BringToFrontAsync();
-                    await pages.First().BRINGTOFRONTAsync();
-                    await pages.First().EvaluateAsync($"window.location.href = '{url}'");
+                    env.RunningBrowserId = null;
+                    await db.SaveChangesAsync();
                 }
             }
         }
-
-        public bool IsBrowserRunning(int envId)
+        catch (Exception ex)
         {
-            return _runningBrowsers.ContainsKey(envId);
+            Log.Error(ex, "关闭浏览器失败: {Id}", environmentId);
         }
+    }
 
-        public int GetRunningCount()
+    public async Task OpenUrlAsync(int environmentId, string url)
+    {
+        try
         {
-            return _runningBrowsers.Count;
+            if (_runningBrowsers.TryGetValue(environmentId, out var browser))
+            {
+                var pages = await browser.Contexts[0].PagesAsync();
+                if (pages.Count > 0)
+                {
+                    await pages[0].BringToFrontAsync();
+                    await pages[0].GotoAsync(url);
+                }
+            }
         }
-
-        public async Task CloseAllBrowsersAsync()
+        catch (Exception ex)
         {
-            var tasks = _runningBrowsers.Keys.ToList().Select(CloseBrowserAsync);
-            await Task.WhenAll(tasks);
+            Log.Error(ex, "打开URL失败: {Id} - {Url}", environmentId, url);
+        }
+    }
+
+    public bool IsBrowserRunning(int environmentId)
+    {
+        return _runningBrowsers.ContainsKey(environmentId);
+    }
+
+    public async Task CloseAllBrowsersAsync()
+    {
+        var ids = _runningBrowsers.Keys.ToList();
+        foreach (var id in ids)
+        {
+            await CloseBrowserAsync(id);
         }
     }
 }

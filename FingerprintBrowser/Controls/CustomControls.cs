@@ -1,144 +1,88 @@
-using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using FingerprintBrowser.Models;
 
-namespace FingerprintBrowser.Controls
+namespace FingerprintBrowser.Controls;
+
+public static class StatusIndicator
 {
-    /// <summary>
-    /// 浏览器状态指示器
-    /// </summary>
-    public class BrowserStatusIndicator : Ellipse
+    public static SolidColorBrush GetStatusColor(BrowserStatus status)
     {
-        public static readonly DependencyProperty StatusProperty =
-            DependencyProperty.Register(nameof(Status), typeof(BrowserEnvironmentStatus), typeof(BrowserStatusIndicator),
-                new PropertyMetadata(BrowserEnvironmentStatus.Idle, OnStatusChanged));
-
-        public BrowserEnvironmentStatus Status
+        return status switch
         {
-            get => (BrowserEnvironmentStatus)GetValue(StatusProperty);
-            set => SetValue(StatusProperty, value);
-        }
-
-        private static void OnStatusChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is BrowserStatusIndicator indicator)
-            {
-                indicator.UpdateColor();
-            }
-        }
-
-        private void UpdateColor()
-        {
-            Fill = Status switch
-            {
-                BrowserEnvironmentStatus.Idle => new SolidColorBrush(Color.FromRgb(128, 128, 128)),
-                BrowserEnvironmentStatus.Starting => new SolidColorBrush(Color.FromRgb(255, 193, 7)),
-                BrowserEnvironmentStatus.Running => new SolidColorBrush(Color.FromRgb(40, 167, 69)),
-                BrowserEnvironmentStatus.Stopping => new SolidColorBrush(Color.FromRgb(255, 193, 7)),
-                BrowserEnvironmentStatus.Error => new SolidColorBrush(Color.FromRgb(220, 53, 69)),
-                _ => new SolidColorBrush(Color.FromRgb(128, 128, 128))
-            };
-
-            Width = 10;
-            Height = 10;
-        }
-
-        public BrowserStatusIndicator()
-        {
-            UpdateColor();
-        }
+            BrowserStatus.Running => new SolidColorBrush(Color.FromRgb(52, 211, 153)),
+            BrowserStatus.Starting => new SolidColorBrush(Color.FromRgb(251, 191, 36)),
+            BrowserStatus.Stopping => new SolidColorBrush(Color.FromRgb(251, 191, 36)),
+            BrowserStatus.Error => new SolidColorBrush(Color.FromRgb(248, 113, 113)),
+            _ => new SolidColorBrush(Color.FromRgb(156, 163, 175))
+        };
     }
 
-    /// <summary>
-    /// 代理状态指示器
-    /// </summary>
-    public class ProxyStatusIndicator : Ellipse
+    public static string GetStatusText(BrowserStatus status)
     {
-        public static readonly DependencyProperty StatusProperty =
-            DependencyProperty.Register(nameof(Status), typeof(ProxyStatus), typeof(ProxyStatusIndicator),
-                new PropertyMetadata(ProxyStatus.Untested, OnStatusChanged));
-
-        public ProxyStatus Status
+        return status switch
         {
-            get => (ProxyStatus)GetValue(StatusProperty);
-            set => SetValue(StatusProperty, value);
-        }
-
-        private static void OnStatusChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is ProxyStatusIndicator indicator)
-            {
-                indicator.UpdateColor();
-            }
-        }
-
-        private void UpdateColor()
-        {
-            Fill = Status switch
-            {
-                ProxyStatus.Untested => new SolidColorBrush(Color.FromRgb(128, 128, 128)),
-                ProxyStatus.Valid => new SolidColorBrush(Color.FromRgb(40, 167, 69)),
-                ProxyStatus.Invalid => new SolidColorBrush(Color.FromRgb(220, 53, 69)),
-                ProxyStatus.Timeout => new SolidColorBrush(Color.FromRgb(255, 193, 7)),
-                _ => new SolidColorBrush(Color.FromRgb(128, 128, 128))
-            };
-
-            Width = 10;
-            Height = 10;
-        }
-
-        public ProxyStatusIndicator()
-        {
-            UpdateColor();
-        }
+            BrowserStatus.Running => "运行中",
+            BrowserStatus.Starting => "启动中",
+            BrowserStatus.Stopping => "关闭中",
+            BrowserStatus.Error => "错误",
+            _ => "空闲"
+        };
     }
 
-    /// <summary>
-    /// 颜色指示器（用于分组）
-    /// </summary>
-    public class ColorIndicator : Rectangle
+    public static SolidColorBrush GetProxyStatusColor(ProxyStatus status)
     {
-        public static readonly DependencyProperty ColorProperty =
-            DependencyProperty.Register(nameof(Color), typeof(string), typeof(ColorIndicator),
-                new PropertyMetadata("#1890ff", OnColorChanged));
-
-        public string Color
+        return status switch
         {
-            get => (string)GetValue(ColorProperty);
-            set => SetValue(ColorProperty, value);
-        }
+            ProxyStatus.Available => new SolidColorBrush(Color.FromRgb(52, 211, 153)),
+            ProxyStatus.Unavailable => new SolidColorBrush(Color.FromRgb(248, 113, 113)),
+            ProxyStatus.Testing => new SolidColorBrush(Color.FromRgb(251, 191, 36)),
+            _ => new SolidColorBrush(Color.FromRgb(156, 163, 175))
+        };
+    }
 
-        private static void OnColorChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    public static string GetProxyStatusText(ProxyStatus status)
+    {
+        return status switch
         {
-            if (d is ColorIndicator indicator)
-            {
-                indicator.UpdateFill();
-            }
-        }
+            ProxyStatus.Available => "可用",
+            ProxyStatus.Unavailable => "不可用",
+            ProxyStatus.Testing => "测试中",
+            _ => "未知"
+        };
+    }
 
-        private void UpdateFill()
+    public static Border CreateStatusIndicator(BrowserStatus status)
+    {
+        var border = new Border
         {
-            try
-            {
-                var color = (Color)ColorConverter.ConvertFromString(Color);
-                Fill = new SolidColorBrush(color);
-            }
-            catch
-            {
-                Fill = new SolidColorBrush(Color.FromRgb(24, 144, 255));
-            }
+            Width = 8,
+            Height = 8,
+            CornerRadius = new CornerRadius(4),
+            Background = GetStatusColor(status),
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 8, 0)
+        };
 
-            Width = 4;
-            RadiusX = 2;
-            RadiusY = 2;
-        }
+        return border;
+    }
 
-        public ColorIndicator()
+    public static Border CreateColorIndicator(string hexColor)
+    {
+        var color = (Color)ColorConverter.ConvertFromString(hexColor);
+        
+        var border = new Border
         {
-            UpdateFill();
-        }
+            Width = 12,
+            Height = 12,
+            CornerRadius = new CornerRadius(2),
+            Background = new SolidColorBrush(color),
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 8, 0)
+        };
+
+        return border;
     }
 }
