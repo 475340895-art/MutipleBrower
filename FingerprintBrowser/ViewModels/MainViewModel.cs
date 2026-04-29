@@ -1,473 +1,516 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FingerprintBrowser.Data;
 using FingerprintBrowser.Models;
 using FingerprintBrowser.Services;
+using Microsoft.EntityFrameworkCore;
 
-namespace FingerprintBrowser.ViewModels;
-
-/// <summary>
-/// 主窗口 ViewModel
-/// </summary>
-public partial class MainViewModel : ObservableObject
+namespace FingerprintBrowser.ViewModels
 {
-    private readonly BrowserService _browserService;
-    private readonly ProxyService _proxyService;
-    private System.Timers.Timer? _refreshTimer;
-
-    [ObservableProperty]
-    private ObservableCollection<BrowserEnvironment> _environments = new();
-
-    [ObservableProperty]
-    private ObservableCollection<BrowserEnvironment> _filteredEnvironments = new();
-
-    [ObservableProperty]
-    private ObservableCollection<EnvironmentGroup> _groups = new();
-
-    [ObservableProperty]
-    private ObservableCollection<EnvironmentGroup> _filterGroups = new();
-
-    [ObservableProperty]
-    private BrowserEnvironment? _selectedEnvironment;
-
-    [ObservableProperty]
-    private EnvironmentGroup? _selectedGroup;
-
-    [ObservableProperty]
-    private EnvironmentGroup? _selectedFilterGroup;
-
-    [ObservableProperty]
-    private string _searchText = "";
-
-    [ObservableProperty]
-    private bool _isLoading;
-
-    [ObservableProperty]
-    private string _statusMessage = "就绪";
-
-    [ObservableProperty]
-    private int _runningCount;
-
-    [ObservableProperty]
-    private int _totalCount;
-
-    [ObservableProperty]
-    private string _currentTheme = "深色";
-
-    public MainViewModel()
+    public partial class MainViewModel : ObservableObject
     {
-        _browserService = new BrowserService();
-        _proxyService = new ProxyService();
-        InitializeAsync();
-    }
+        private readonly BrowserDbContext _db;
+        private readonly PlaywrightService _playwrightService;
+        private using Application = System.Windows.Application;
 
-    private async void InitializeAsync()
-    {
-        await LoadDataAsync();
-        StartRefreshTimer();
-    }
+        [ObservableProperty]
+        private ObservableCollection<BrowserEnvironment> _environments = new();
 
-    private void StartRefreshTimer()
-    {
-        _refreshTimer = new System.Timers.Timer(2000);
-        _refreshTimer.Elapsed += async (s, e) =>
+        [ObservableProperty]
+        private ObservableCollection<BrowserEnvironment> _filteredEnvironments = new();
+
+        [ObservableProperty]
+        private ObservableCollection<EnvironmentGroup> _groups = new();
+
+        [ObservableProperty]
+        private EnvironmentGroup? _selectedGroup;
+
+        [ObservableProperty]
+        private BrowserEnvironment? _selectedEnvironment;
+
+        [ObservableProperty]
+        private string _searchText = string.Empty;
+
+        [ObservableProperty]
+        private int _runningCount;
+
+        [ObservableProperty]
+        private int _totalCount;
+
+        [ObservableProperty]
+        private string _statusMessage = "就绪";
+
+        [ObservableProperty]
+        private bool _isLoading;
+
+        [ObservableProperty]
+        private int _maxConcurrency = 5;
+
+        [ObservableProperty]
+        private int _startupDelay = 1000;
+
+        public MainViewModel()
         {
-            await Application.Current.Dispatcher.InvokeAsync(async () =>
+            _db = new BrowserDbContext();
+            _playwrightService = PlaywrightService.Instance;
+        }
+
+        public async Task InitializeAsync()
+        {
+            try
             {
-                await LoadEnvironmentsAsync(false);
-            });
-        };
-        _refreshTimer.Start();
-    }
+                IsLoading = true;
+                StatusMessage = "正在加载数据...";
 
-    public async Task LoadDataAsync()
-    {
-        try
-        {
-            IsLoading = true;
-            StatusMessage = "加载数据中...";
+                await LoadGroupsAsync();
+                await LoadEnvironmentsAsync();
 
-            await LoadGroupsAsync();
-            await LoadEnvironmentsAsync(true);
-            await LoadProxyListAsync();
-
-            StatusMessage = "就绪";
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"加载失败: {ex.Message}";
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    private async Task LoadGroupsAsync()
-    {
-        var groups = await _browserService.GetGroupsAsync();
-        Groups.Clear();
-        Groups.Add(new EnvironmentGroup { Id = 0, Name = "全部环境", Color = "#667eea" });
-        foreach (var group in groups)
-        {
-            Groups.Add(group);
+                StatusMessage = $"已加载 {TotalCount} 个环境";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"加载失败: {ex.Message}";
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
-        FilterGroups.Clear();
-        FilterGroups.Add(new EnvironmentGroup { Id = 0, Name = "全部", Color = "#667eea" });
-        foreach (var group in groups)
+        public async Task LoadGroupsAsync()
         {
-            FilterGroups.Add(group);
-        }
-    }
-
-    public async Task LoadEnvironmentsAsync(bool showLoading = false)
-    {
-        if (showLoading)
-        {
-            IsLoading = true;
+            var groups = await _db.Groups.OrderBy(g => g.SortOrder).ToListAsync();
+            Groups.Clear();
+            Groups.Add(new EnvironmentGroup { Id = 0, Name = "全部分组", Color = "#1890ff" });
+            foreach (var group in groups)
+            {
+                Groups.Add(group);
+            }
         }
 
-        try
+        public async Task LoadEnvironmentsAsync()
         {
-            var envs = await _browserService.GetEnvironmentsAsync();
+            var environments = await _db.Environments
+                .Include(e => e.Group)
+                .Include(e => e.ProxyConfig)
+                .ToListAsync();
+
             Environments.Clear();
-            foreach (var env in envs)
+            foreach (var env in environments)
             {
                 Environments.Add(env);
             }
 
             TotalCount = Environments.Count;
-            RunningCount = Environments.Count(e => e.Status == 1);
-
+            UpdateRunningCount();
             FilterEnvironments();
         }
-        finally
+
+        partial void OnSelectedGroupChanged(EnvironmentGroup? value)
         {
-            if (showLoading)
+            FilterEnvironments();
+        }
+
+        partial void OnSearchTextChanged(string value)
+        {
+            FilterEnvironments();
+        }
+
+        public void FilterEnvironments()
+        {
+            var filtered = Environments.AsEnumerable();
+
+            if (SelectedGroup != null && SelectedGroup.Id > 0)
             {
-                IsLoading = false;
+                filtered = filtered.Where(e => e.GroupId == SelectedGroup.Id);
+            }
+
+            if (!string.IsNullOrWhiteSpace(SearchText))
+            {
+                var search = SearchText.ToLower();
+                filtered = filtered.Where(e =>
+                    e.Name.ToLower().Contains(search) ||
+                    e.Remark.ToLower().Contains(search));
+            }
+
+            FilteredEnvironments.Clear();
+            foreach (var env in filtered)
+            {
+                FilteredEnvironments.Add(env);
             }
         }
-    }
 
-    private async Task LoadProxyListAsync()
-    {
-        // Proxy list is handled by ProxyViewModel
-    }
-
-    partial void OnSearchTextChanged(string value)
-    {
-        FilterEnvironments();
-    }
-
-    partial void OnSelectedFilterGroupChanged(EnvironmentGroup? value)
-    {
-        FilterEnvironments();
-    }
-
-    public void FilterEnvironments()
-    {
-        FilteredEnvironments.Clear();
-
-        var filtered = Environments.AsEnumerable();
-
-        // 按分组筛选
-        if (SelectedFilterGroup != null && SelectedFilterGroup.Id > 0)
+        [RelayCommand]
+        private async Task CreateEnvironmentAsync()
         {
-            filtered = filtered.Where(e => e.GroupId == SelectedFilterGroup.Id);
+            var window = new Views.EnvironmentEditWindow();
+            if (window.ShowDialog() == true)
+            {
+                await LoadEnvironmentsAsync();
+                StatusMessage = "环境创建成功";
+            }
         }
 
-        // 按搜索文本筛选
-        if (!string.IsNullOrWhiteSpace(SearchText))
+        [RelayCommand]
+        private async Task EditEnvironmentAsync(BrowserEnvironment? env)
         {
-            var search = SearchText.ToLower();
-            filtered = filtered.Where(e =>
-                e.Name.ToLower().Contains(search) ||
-                (e.Remark?.ToLower().Contains(search) ?? false));
+            if (env == null) return;
+
+            var window = new Views.EnvironmentEditWindow(env.Id);
+            if (window.ShowDialog() == true)
+            {
+                await LoadEnvironmentsAsync();
+                StatusMessage = "环境更新成功";
+            }
         }
 
-        foreach (var env in filtered)
+        [RelayCommand]
+        private async Task CopyEnvironmentAsync(BrowserEnvironment? env)
         {
-            FilteredEnvironments.Add(env);
-        }
-    }
+            if (env == null) return;
 
-    public void SelectGroup(EnvironmentGroup? group)
-    {
-        SelectedGroup = group;
-        if (group != null)
-        {
-            SelectedFilterGroup = FilterGroups.FirstOrDefault(g => g.Id == group.Id);
-            FilterEnvironments();
-        }
-    }
+            var copy = new BrowserEnvironment
+            {
+                Name = $"{env.Name} (副本)",
+                GroupId = env.GroupId,
+                ProxyId = env.ProxyId,
+                BrowserType = env.BrowserType,
+                Resolution = env.Resolution,
+                Timezone = env.Timezone,
+                Languages = env.Languages,
+                UserAgent = env.UserAgent,
+                WebGLVendor = env.WebGLVendor,
+                WebGLRenderer = env.WebGLRenderer,
+                EnableWebRTC = env.EnableWebRTC,
+                EnableCookies = env.EnableCookies,
+                EnableJavaScript = env.EnableJavaScript,
+                StartupUrl = env.StartupUrl,
+                Remark = env.Remark
+            };
 
-    [RelayCommand]
-    public async Task AddEnvironmentAsync()
-    {
-        var window = new Views.EnvironmentEditWindow();
-        window.Owner = Application.Current.MainWindow;
-        if (window.ShowDialog() == true)
-        {
-            await LoadEnvironmentsAsync(true);
-        }
-    }
-
-    [RelayCommand]
-    public async Task EditEnvironmentAsync(BrowserEnvironment? env)
-    {
-        if (env == null) return;
-
-        var window = new Views.EnvironmentEditWindow(env.Id);
-        window.Owner = Application.Current.MainWindow;
-        if (window.ShowDialog() == true)
-        {
-            await LoadEnvironmentsAsync(true);
-        }
-    }
-
-    [RelayCommand]
-    public async Task CopyEnvironmentAsync(int id)
-    {
-        try
-        {
-            await _browserService.CopyEnvironmentAsync(id);
+            _db.Environments.Add(copy);
+            await _db.SaveChangesAsync();
+            await LoadEnvironmentsAsync();
             StatusMessage = "环境复制成功";
-            await LoadEnvironmentsAsync(true);
         }
-        catch (Exception ex)
+
+        [RelayCommand]
+        private async Task DeleteEnvironmentAsync(BrowserEnvironment? env)
         {
-            StatusMessage = $"复制失败: {ex.Message}";
+            if (env == null) return;
+
+            var result = MessageBox.Show(
+                $"确定要删除环境「{env.Name}」吗？",
+                "确认删除",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                await _playwrightService.CloseBrowserAsync(env.Id);
+                _db.Environments.Remove(env);
+                await _db.SaveChangesAsync();
+                await LoadEnvironmentsAsync();
+                StatusMessage = "环境已删除";
+            }
         }
-    }
 
-    [RelayCommand]
-    public async Task DeleteEnvironmentAsync(int id)
-    {
-        var result = HandyControl.Controls.MessageBox.Show(
-            "确定要删除这个环境吗？",
-            "确认删除",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-
-        if (result == MessageBoxResult.Yes)
+        [RelayCommand]
+        private async Task StartBrowserAsync(BrowserEnvironment? env)
         {
+            if (env == null) return;
+
             try
             {
-                await _browserService.DeleteEnvironmentAsync(id);
-                StatusMessage = "环境已删除";
-                await LoadEnvironmentsAsync(true);
+                if (env.Status == BrowserEnvironmentStatus.Running)
+                {
+                    StatusMessage = "环境已在运行中";
+                    return;
+                }
+
+                env.Status = BrowserEnvironmentStatus.Starting;
+                StatusMessage = $"正在启动 {env.Name}...";
+
+                await _playwrightService.LaunchBrowserAsync(env);
+                env.Status = BrowserEnvironmentStatus.Running;
+                env.RunningBrowserId = env.Id;
+
+                UpdateRunningCount();
+                StatusMessage = $"已启动 {env.Name}";
             }
             catch (Exception ex)
             {
-                StatusMessage = $"删除失败: {ex.Message}";
+                env.Status = BrowserEnvironmentStatus.Error;
+                StatusMessage = $"启动失败: {ex.Message}";
             }
         }
-    }
 
-    [RelayCommand]
-    public async Task StartBrowserAsync(int id)
-    {
-        try
+        [RelayCommand]
+        private async Task StopBrowserAsync(BrowserEnvironment? env)
         {
-            StatusMessage = "正在启动浏览器...";
-            await _browserService.StartBrowserAsync(id);
-            StatusMessage = "浏览器已启动";
-            await LoadEnvironmentsAsync();
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"启动失败: {ex.Message}";
-        }
-    }
+            if (env == null) return;
 
-    [RelayCommand]
-    public async Task StopBrowserAsync(int id)
-    {
-        try
-        {
-            StatusMessage = "正在关闭浏览器...";
-            await _browserService.StopBrowserAsync(id);
-            StatusMessage = "浏览器已关闭";
-            await LoadEnvironmentsAsync();
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"关闭失败: {ex.Message}";
-        }
-    }
+            try
+            {
+                env.Status = BrowserEnvironmentStatus.Stopping;
+                StatusMessage = $"正在停止 {env.Name}...";
 
-    public void OpenBrowserUrl(int environmentId)
-    {
-        try
-        {
-            _browserService.OpenBrowserUrl(environmentId);
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"打开URL失败: {ex.Message}";
-        }
-    }
+                await _playwrightService.CloseBrowserAsync(env.Id);
+                env.Status = BrowserEnvironmentStatus.Idle;
+                env.RunningBrowserId = null;
 
-    [RelayCommand]
-    public async Task BatchStartAsync()
-    {
-        try
+                UpdateRunningCount();
+                StatusMessage = $"已停止 {env.Name}";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"停止失败: {ex.Message}";
+            }
+        }
+
+        [RelayCommand]
+        private async Task OpenBrowserUrlAsync(BrowserEnvironment? env)
         {
-            StatusMessage = "正在批量启动...";
-            var toStart = Environments.Where(e => e.Status == 0).Take(5).ToList();
+            if (env?.Status != BrowserEnvironmentStatus.Running) return;
+
+            var urlWindow = new Views.UrlInputWindow();
+            if (urlWindow.ShowDialog() == true && !string.IsNullOrWhiteSpace(urlWindow.InputUrl))
+            {
+                await _playwrightService.OpenUrl(env.Id, urlWindow.InputUrl);
+            }
+        }
+
+        [RelayCommand]
+        private async Task BatchStartAsync()
+        {
+            var toStart = FilteredEnvironments
+                .Where(e => e.Status == BrowserEnvironmentStatus.Idle)
+                .Take(MaxConcurrency)
+                .ToList();
+
+            if (!toStart.Any())
+            {
+                StatusMessage = "没有需要启动的环境";
+                return;
+            }
+
+            StatusMessage = $"正在批量启动 {toStart.Count} 个环境...";
+
             foreach (var env in toStart)
             {
-                try
-                {
-                    await _browserService.StartBrowserAsync(env.Id);
-                }
-                catch { }
+                await StartBrowserAsync(env);
+                await Task.Delay(StartupDelay);
             }
-            StatusMessage = "批量启动完成";
-            await LoadEnvironmentsAsync();
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"批量启动失败: {ex.Message}";
-        }
-    }
 
-    [RelayCommand]
-    public async Task BatchStopAsync()
-    {
-        try
+            StatusMessage = $"已启动 {toStart.Count} 个环境";
+        }
+
+        [RelayCommand]
+        private async Task BatchStopAsync()
         {
-            StatusMessage = "正在批量关闭...";
-            var toStop = Environments.Where(e => e.Status == 1).ToList();
+            var toStop = FilteredEnvironments
+                .Where(e => e.Status == BrowserEnvironmentStatus.Running)
+                .ToList();
+
+            if (!toStop.Any())
+            {
+                StatusMessage = "没有正在运行的环境";
+                return;
+            }
+
+            StatusMessage = $"正在批量停止 {toStop.Count} 个环境...";
+
             foreach (var env in toStop)
             {
-                try
-                {
-                    await _browserService.StopBrowserAsync(env.Id);
-                }
-                catch { }
+                await StopBrowserAsync(env);
             }
-            StatusMessage = "批量关闭完成";
-            await LoadEnvironmentsAsync();
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"批量关闭失败: {ex.Message}";
-        }
-    }
 
-    [RelayCommand]
-    public async Task ImportEnvironmentsAsync(string filePath)
-    {
-        if (string.IsNullOrEmpty(filePath))
+            StatusMessage = $"已停止 {toStop.Count} 个环境";
+        }
+
+        [RelayCommand]
+        private async Task ImportEnvironmentsAsync()
         {
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
-                Filter = "JSON文件|*.json|所有文件|*.*",
+                Filter = "JSON 文件 (*.json)|*.json|所有文件 (*.*)|*.*",
                 Title = "导入环境"
             };
 
             if (dialog.ShowDialog() == true)
             {
-                filePath = dialog.FileName;
-            }
-            else
-            {
-                return;
+                try
+                {
+                    IsLoading = true;
+                    var imported = await ImportExportService.ImportEnvironmentsAsync(dialog.FileName, _db);
+                    await LoadEnvironmentsAsync();
+                    StatusMessage = $"成功导入 {imported} 个环境";
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = $"导入失败: {ex.Message}";
+                }
+                finally
+                {
+                    IsLoading = false;
+                }
             }
         }
 
-        try
-        {
-            StatusMessage = "正在导入...";
-            await _browserService.ImportEnvironmentsAsync(filePath);
-            StatusMessage = "导入成功";
-            await LoadEnvironmentsAsync(true);
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"导入失败: {ex.Message}";
-        }
-    }
-
-    [RelayCommand]
-    public async Task ExportEnvironmentsAsync(string? filePath)
-    {
-        if (string.IsNullOrEmpty(filePath))
+        [RelayCommand]
+        private async Task ExportEnvironmentsAsync()
         {
             var dialog = new Microsoft.Win32.SaveFileDialog
             {
-                Filter = "JSON文件|*.json",
+                Filter = "JSON 文件 (*.json)|*.json",
                 Title = "导出环境",
                 FileName = $"environments_{DateTime.Now:yyyyMMdd}.json"
             };
 
             if (dialog.ShowDialog() == true)
             {
-                filePath = dialog.FileName;
+                try
+                {
+                    IsLoading = true;
+                    await ImportExportService.ExportEnvironmentsAsync(dialog.FileName, FilteredEnvironments.ToList());
+                    StatusMessage = "导出成功";
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = $"导出失败: {ex.Message}";
+                }
+                finally
+                {
+                    IsLoading = false;
+                }
             }
-            else
+        }
+
+        public async Task SelectGroupAsync(EnvironmentGroup? group)
+        {
+            SelectedGroup = group;
+        }
+
+        public async Task ShowEnvironmentDetailsAsync(BrowserEnvironment? env)
+        {
+            SelectedEnvironment = env;
+        }
+
+        [RelayCommand]
+        private void OpenSettings()
+        {
+            var window = new Views.SettingsWindow();
+            window.ShowDialog();
+        }
+
+        [RelayCommand]
+        private void OpenProxyManager()
+        {
+            var window = new Views.ProxyWindow();
+            window.ShowDialog();
+        }
+
+        [RelayCommand]
+        private async Task CreateGroupAsync()
+        {
+            var input = new Views.TextInputWindow("新建分组", "请输入分组名称：");
+            if (input.ShowDialog() == true && !string.IsNullOrWhiteSpace(input.InputText))
             {
-                return;
+                var group = new EnvironmentGroup
+                {
+                    Name = input.InputText,
+                    Color = GenerateRandomColor(),
+                    SortOrder = Groups.Count
+                };
+                _db.Groups.Add(group);
+                await _db.SaveChangesAsync();
+                await LoadGroupsAsync();
+                StatusMessage = "分组创建成功";
             }
         }
 
-        try
+        [RelayCommand]
+        private async Task DeleteGroupAsync(EnvironmentGroup? group)
         {
-            StatusMessage = "正在导出...";
-            await _browserService.ExportEnvironmentsAsync(filePath);
-            StatusMessage = "导出成功";
+            if (group == null || group.Id == 0) return;
+
+            var result = MessageBox.Show(
+                $"确定要删除分组「{group.Name}」吗？该分组下的环境将移至「未分组」。",
+                "确认删除",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                var envsInGroup = await _db.Environments.Where(e => e.GroupId == group.Id).ToListAsync();
+                foreach (var env in envsInGroup)
+                {
+                    env.GroupId = 0;
+                }
+                _db.Groups.Remove(group);
+                await _db.SaveChangesAsync();
+                await LoadGroupsAsync();
+                await LoadEnvironmentsAsync();
+                StatusMessage = "分组已删除";
+            }
         }
-        catch (Exception ex)
+
+        public async Task ChangeThemeAsync(string theme)
         {
-            StatusMessage = $"导出失败: {ex.Message}";
+            try
+            {
+                var app = Application.Current;
+                app.Dispatcher.Invoke(() =>
+                {
+                    var resources = app.Resources.MergedDictionaries;
+                    var skinDict = resources.FirstOrDefault(r =>
+                        r.Source?.OriginalString.Contains("Skin") == true);
+
+                    if (skinDict != null)
+                    {
+                        resources.Remove(skinDict);
+                    }
+
+                    var newSkin = new ResourceDictionary
+                    {
+                        Source = theme switch
+                        {
+                            "Dark" => new Uri("pack://application:,,,/HandyControl;component/Themes/SkinDark.xaml"),
+                            "Light" => new Uri("pack://application:,,,/HandyControl;component/Themes/SkinDefault.xaml"),
+                            _ => new Uri("pack://application:,,,/HandyControl;component/Themes/SkinDark.xaml")
+                        }
+                    };
+                    resources.Insert(0, newSkin);
+                });
+
+                await Task.CompletedTask;
+            }
+            catch { }
         }
-    }
 
-    [RelayCommand]
-    public void OpenSettings()
-    {
-        var window = new Views.SettingsWindow();
-        window.Owner = Application.Current.MainWindow;
-        window.ShowDialog();
-    }
-
-    [RelayCommand]
-    public void OpenProxyManager()
-    {
-        var window = new Views.ProxyWindow();
-        window.Owner = Application.Current.MainWindow;
-        window.ShowDialog();
-    }
-
-    [RelayCommand]
-    public void ChangeTheme(string themeName)
-    {
-        CurrentTheme = themeName;
-        var skin = themeName switch
+        private void UpdateRunningCount()
         {
-            "浅色" => HandyControl.Data.SkinType.Default,
-            "深蓝" => HandyControl.Data.SkinType.Dark,
-            _ => HandyControl.Data.SkinType.Dark
-        };
-        HandyControl.Controls.SkinManager.Instance.SetSkin((HandyControl.Data.SkinType)skin);
-    }
+            RunningCount = Environments.Count(e => e.Status == BrowserEnvironmentStatus.Running);
+        }
 
-    [RelayCommand]
-    public void ShowEnvironmentDetails(BrowserEnvironment? env)
-    {
-        SelectedEnvironment = env;
-    }
+        private string GenerateRandomColor()
+        {
+            var colors = new[] { "#1890ff", "#52c41a", "#faad14", "#f5222d", "#722ed1", "#13c2c2", "#eb2f96" };
+            return colors[new Random().Next(colors.Length)];
+        }
 
-    public void Cleanup()
-    {
-        _refreshTimer?.Stop();
-        _refreshTimer?.Dispose();
+        public async Task CleanupAsync()
+        {
+            foreach (var env in Environments.Where(e => e.Status == BrowserEnvironmentStatus.Running))
+            {
+                await StopBrowserAsync(env);
+            }
+        }
     }
 }

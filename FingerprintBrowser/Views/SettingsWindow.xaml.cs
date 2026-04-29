@@ -1,14 +1,17 @@
 using System;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using FingerprintBrowser.Services;
 using HandyControl.Controls;
+using Window = HandyControl.Controls.Window;
 
 namespace FingerprintBrowser.Views
 {
-    public partial class SettingsWindow
+    public partial class SettingsWindow : Window
     {
+        public int MaxConcurrency { get; set; } = 5;
+        public int StartupDelay { get; set; } = 1000;
+        public string CurrentTheme { get; set; } = "Dark";
+
         public SettingsWindow()
         {
             InitializeComponent();
@@ -17,64 +20,23 @@ namespace FingerprintBrowser.Views
 
         private void LoadSettings()
         {
-            // 加载当前设置
-            DataPathTextBox.Text = AppConstants.DefaultDataPath;
-            
-            // 从配置加载（如果存在）
-            var config = AppSettings.Load();
-            LaunchDelayTextBox.Text = config.LaunchDelay.ToString();
-            ConcurrentCountTextBox.Text = config.ConcurrentBrowserCount.ToString();
-            ProxyTimeoutTextBox.Text = config.ProxyTimeout.ToString();
-            CloseWithXCheckBox.IsChecked = config.CloseWithX;
-            
-            // 主题
-            foreach (ComboBoxItem item in ThemeComboBox.Items)
-            {
-                if (item.Tag?.ToString() == config.Theme)
-                {
-                    ThemeComboBox.SelectedItem = item;
-                    break;
-                }
-            }
+            MaxConcurrency = Properties.Settings.Default.MaxConcurrency;
+            StartupDelay = Properties.Settings.Default.StartupDelay;
+            CurrentTheme = Properties.Settings.Default.Theme;
+
+            MaxConcurrencySlider.Value = MaxConcurrency;
+            StartupDelaySlider.Value = StartupDelay;
         }
 
-        private void ThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void SaveSettings_Click(object sender, RoutedEventArgs e)
         {
-            // 主题切换可以实时预览
-        }
+            Properties.Settings.Default.MaxConcurrency = MaxConcurrency;
+            Properties.Settings.Default.StartupDelay = StartupDelay;
+            Properties.Settings.Default.Theme = CurrentTheme;
+            Properties.Settings.Default.Save();
 
-        private void BrowseDataPath_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new System.Windows.Forms.FolderBrowserDialog
-            {
-                Description = "选择数据存储路径",
-                SelectedPath = DataPathTextBox.Text
-            };
-
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                DataPathTextBox.Text = dialog.SelectedPath;
-            }
-        }
-
-        private void Reset_Click(object sender, RoutedEventArgs e)
-        {
-            var result = HandyControl.Controls.MessageBox.Show(
-                "确定要恢复所有设置为默认值吗？",
-                "确认重置",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                ThemeComboBox.SelectedIndex = 0;
-                LaunchDelayTextBox.Text = "0";
-                ConcurrentCountTextBox.Text = "5";
-                ProxyTimeoutTextBox.Text = "10";
-                CloseWithXCheckBox.IsChecked = false;
-                DataPathTextBox.Text = AppConstants.DefaultDataPath;
-                Growl.Success("已恢复默认设置");
-            }
+            Growl.Success("设置已保存");
+            Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
@@ -82,78 +44,30 @@ namespace FingerprintBrowser.Views
             Close();
         }
 
-        private void Save_Click(object sender, RoutedEventArgs e)
+        private void MaxConcurrencySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            try
+            if (MaxConcurrencyText != null)
             {
-                // 验证输入
-                if (!int.TryParse(LaunchDelayTextBox.Text, out int launchDelay) || launchDelay < 0)
-                {
-                    Growl.Warning("启动延迟必须是大于等于0的数字");
-                    return;
-                }
-
-                if (!int.TryParse(ConcurrentCountTextBox.Text, out int concurrentCount) || concurrentCount < 1 || concurrentCount > 50)
-                {
-                    Growl.Warning("并发数量必须在1-50之间");
-                    return;
-                }
-
-                if (!int.TryParse(ProxyTimeoutTextBox.Text, out int proxyTimeout) || proxyTimeout < 1)
-                {
-                    Growl.Warning("代理超时必须是大于0的数字");
-                    return;
-                }
-
-                // 保存配置
-                var config = new AppConfig
-                {
-                    Theme = (ThemeComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "Dark",
-                    LaunchDelay = launchDelay,
-                    ConcurrentBrowserCount = concurrentCount,
-                    ProxyTimeout = proxyTimeout,
-                    CloseWithX = CloseWithXCheckBox.IsChecked ?? false,
-                    DataPath = DataPathTextBox.Text
-                };
-
-                AppSettings.Save(config);
-
-                // 应用主题
-                ApplyTheme(config.Theme);
-
-                Growl.Success("设置已保存");
-                Close();
-            }
-            catch (Exception ex)
-            {
-                Growl.Error($"保存失败: {ex.Message}");
+                MaxConcurrency = (int)e.NewValue;
+                MaxConcurrencyText.Text = $"并发数: {MaxConcurrency}";
             }
         }
 
-        private void ApplyTheme(string theme)
+        private void StartupDelaySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            var app = Application.Current;
-            var resources = app.Resources.MergedDictionaries;
-
-            // 移除现有主题
-            var toRemove = resources.Where(d => 
-                d.Source?.ToString().Contains("HandyControl") == true &&
-                d.Source.ToString().Contains("Skin")).ToList();
-            
-            foreach (var dict in toRemove)
+            if (StartupDelayText != null)
             {
-                resources.Remove(dict);
+                StartupDelay = (int)e.NewValue;
+                StartupDelayText.Text = $"启动延迟: {StartupDelay}ms";
             }
+        }
 
-            // 添加新主题
-            string skinPath = theme switch
+        private void Theme_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Header != null)
             {
-                "Light" => "pack://application:,,,/HandyControl;component/Themes/SkinDefault.xaml",
-                "DeepBlue" => "pack://application:,,,/HandyControl;component/Themes/SkinDeepBlue.xaml",
-                _ => "pack://application:,,,/HandyControl;component/Themes/SkinDark.xaml"
-            };
-
-            resources.Insert(0, new ResourceDictionary { Source = new Uri(skinPath) });
+                CurrentTheme = menuItem.Header.ToString()?.Replace("主题: ", "").Trim() ?? "Dark";
+            }
         }
     }
 }

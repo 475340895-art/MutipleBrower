@@ -1,152 +1,64 @@
-using System.Diagnostics;
-using System.IO;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using FingerprintBrowser.Models;
 using Microsoft.Playwright;
-using Serilog;
 
-namespace FingerprintBrowser.Services;
-
-/// <summary>
-/// 浏览器包装器接口
-/// </summary>
-public interface IBrowserWrapper : IAsyncDisposable
+namespace FingerprintBrowser.Services
 {
-    IBrowserContext Context { get; }
-    IPage? CurrentPage { get; }
-    Task<IPage> OpenUrlAsync(string url);
-    Task CloseAsync();
-}
-
-/// <summary>
-/// Playwright 浏览器包装器
-/// </summary>
-public class PlaywrightBrowserWrapper : IBrowserWrapper
-{
-    private readonly IPlaywright _playwright;
-    private readonly IBrowser _browser;
-    private readonly IBrowserContext _context;
-    private IPage? _currentPage;
-
-    public IBrowserContext Context => _context;
-    public IPage? CurrentPage => _currentPage;
-
-    public PlaywrightBrowserWrapper(IPlaywright playwright, IBrowser browser, IBrowserContext context)
+    public class PlaywrightService
     {
-        _playwright = playwright;
-        _browser = browser;
-        _context = context;
-    }
+        private static PlaywrightService? _instance;
+        private static readonly object _lock = new();
+        private IPlaywright? _playwright;
+        private readonly Dictionary<int, IBrowser> _browsers = new();
+        private bool _isInitialized;
 
-    public async Task<IPage> OpenUrlAsync(string url)
-    {
-        _currentPage = await _context.NewPageAsync();
-        await _currentPage.GotoAsync(url);
-        return _currentPage;
-    }
-
-    public async Task CloseAsync()
-    {
-        try
+        public static PlaywrightService Instance
         {
-            if (_currentPage != null)
+            get
             {
-                await _currentPage.CloseAsync();
-                _currentPage = null;
-            }
-
-            await _context.CloseAsync();
-            await _browser.CloseAsync();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "关闭 Playwright 浏览器时发生异常");
-        }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await CloseAsync();
-    }
-}
-
-/// <summary>
-/// Playwright 服务 - 管理 Playwright 实例和浏览器创建
-/// </summary>
-public class PlaywrightService
-{
-    private static readonly Lazy<PlaywrightService> _instance = new(() => new PlaywrightService());
-    public static PlaywrightService Instance => _instance.Value;
-
-    private IPlaywright? _playwright;
-    private bool _isInstalled;
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
-
-    private PlaywrightService()
-    {
-    }
-
-    /// <summary>
-    /// 确保 Playwright 已安装
-    /// </summary>
-    public async Task EnsureInstalledAsync()
-    {
-        try
-        {
-            Log.Information("正在检查 Playwright 安装状态...");
-
-            var playwrightPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "ms-playwright");
-
-            if (!Directory.Exists(playwrightPath))
-            {
-                Log.Information("正在安装 Playwright 浏览器驱动...");
-
-                // 使用 Process 调用 playwright CLI 安装
-                var startInfo = new ProcessStartInfo
+                if (_instance == null)
                 {
-                    FileName = "cmd",
-                    Arguments = "/c npx playwright install chromium",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
-                };
-
-                using var process = Process.Start(startInfo);
-                if (process != null)
-                {
-                    await process.WaitForExitAsync();
+                    lock (_lock)
+                    {
+                        _instance ??= new PlaywrightService();
+                    }
                 }
-
-                _isInstalled = Directory.Exists(playwrightPath);
-                Log.Information("Playwright 浏览器驱动安装完成");
+                return _instance;
             }
-            else
+        }
+
+        private PlaywrightService() { }
+
+        public async Task InitializeAsync()
+        {
+            if (_isInitialized) return;
+
+            try
             {
-                _isInstalled = true;
-                Log.Information("Playwright 已安装");
+                _playwright = await Microsoft.Playwright.Playwright.CreateAsync();
+                _isInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Playwright 初始化失败: {ex.Message}", ex);
             }
         }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Playwright 安装失败");
-            _isInstalled = false;
-        }
-    }
 
-    /// <summary>
-    /// 创建浏览器实例
-    /// </summary>
-    public async Task<IBrowserWrapper?> CreateBrowserAsync(BrowserEnvironment environment)
-    {
-        await _semaphore.WaitAsync();
-        try
+        public async Task<IBrowser> LaunchBrowserAsync(BrowserEnvironment env)
         {
-            _playwright ??= await Playwright.CreateAsync();
+            if (_playwright == null)
+            {
+                await InitializeAsync();
+            }
 
-            // 启动浏览器
-            var browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+            if (_browsers.ContainsKey(env.Id))
+            {
+                return _browsers[env.Id];
+            }
+
+            var options = new BrowserTypeLaunchOptions
             {
                 Headless = false,
                 Args = new[]
@@ -155,149 +67,181 @@ public class PlaywrightService
                     "--disable-dev-shm-usage",
                     "--no-sandbox"
                 }
-            });
-
-            // 创建浏览器上下文（隔离环境）
-            var contextOptions = CreateContextOptions(environment);
-            var context = await browser.NewContextAsync(contextOptions);
-
-            // 创建包装器
-            var browserImpl = new PlaywrightBrowserWrapper(_playwright, browser, context);
-            if (!string.IsNullOrEmpty(environment.StartupUrl))
-            {
-                await browserImpl.OpenUrlAsync(environment.StartupUrl);
-            }
-
-            return browserImpl;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "创建浏览器实例失败");
-            return null;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
-    }
-
-    /// <summary>
-    /// 创建浏览器上下文选项（指纹配置）
-    /// </summary>
-    private BrowserNewContextOptions CreateContextOptions(BrowserEnvironment env)
-    {
-        var options = new BrowserNewContextOptions
-        {
-            // 视口大小
-            ViewportSize = new ViewportSize
-            {
-                Width = env.ScreenWidth,
-                Height = env.ScreenHeight
-            },
-
-            // 用户代理
-            UserAgent = env.UserAgent ?? GenerateUserAgent(),
-
-            // 权限
-            Permissions = new[] { "geolocation", "notifications" },
-
-            // 时区
-            TimezoneId = env.TimeZoneId ?? GetTimezoneId(env.TimeZone),
-
-            // 语言
-            Locale = env.Language ?? "zh-CN"
-        };
-
-        return options;
-    }
-
-    /// <summary>
-    /// 生成随机用户代理
-    /// </summary>
-    private static string GenerateUserAgent()
-    {
-        var chromeVersions = new[]
-        {
-            "119.0.6045.106",
-            "120.0.6099.109",
-            "121.0.6167.85"
-        };
-
-        var random = new Random();
-        var version = chromeVersions[random.Next(chromeVersions.Length)];
-
-        return $"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{version} Safari/537.36";
-    }
-
-    /// <summary>
-    /// 根据时区偏移获取时区ID
-    /// </summary>
-    private static string GetTimezoneId(int offset)
-    {
-        return offset switch
-        {
-            -12 => "Etc/GMT+12",
-            -11 => "Pacific/Samoa",
-            -10 => "Pacific/Honolulu",
-            -9 => "America/Anchorage",
-            -8 => "America/Los_Angeles",
-            -7 => "America/Denver",
-            -6 => "America/Chicago",
-            -5 => "America/New_York",
-            -4 => "America/Halifax",
-            -3 => "America/Sao_Paulo",
-            -2 => "Atlantic/South_Georgia",
-            -1 => "Atlantic/Azores",
-            0 => "UTC",
-            1 => "Europe/Paris",
-            2 => "Europe/Helsinki",
-            3 => "Europe/Moscow",
-            4 => "Asia/Dubai",
-            5 => "Asia/Karachi",
-            6 => "Asia/Dhaka",
-            7 => "Asia/Bangkok",
-            8 => "Asia/Shanghai",
-            9 => "Asia/Tokyo",
-            10 => "Australia/Sydney",
-            11 => "Pacific/Noumea",
-            12 => "Pacific/Auckland",
-            _ => "Asia/Shanghai"
-        };
-    }
-
-    /// <summary>
-    /// 测试代理连接
-    /// </summary>
-    public static async Task<(bool Success, int ResponseTime)> TestProxyAsync(string proxyUrl)
-    {
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-
-        try
-        {
-            using var playwright = await Playwright.CreateAsync();
-
-            var proxy = new Proxy
-            {
-                Server = proxyUrl
             };
 
-            // 创建临时浏览器测试代理
-            var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+            // 设置代理
+            if (env.ProxyConfig != null)
             {
-                Headless = true,
-                Proxy = proxy
-            });
+                options.Proxy = new Proxy
+                {
+                    Server = $"{env.ProxyConfig.Protocol.ToLower()}://{env.ProxyConfig.Host}:{env.ProxyConfig.Port}",
+                    Username = string.IsNullOrEmpty(env.ProxyConfig.Username) ? null : env.ProxyConfig.Username,
+                    Password = string.IsNullOrEmpty(env.ProxyConfig.Password) ? null : env.ProxyConfig.Password
+                };
+            }
 
-            await browser.CloseAsync();
+            IBrowser browser;
 
-            stopwatch.Stop();
-            return (true, (int)stopwatch.ElapsedMilliseconds);
+            switch (env.BrowserType.ToLower())
+            {
+                case "firefox":
+                    browser = await _playwright!.Firefox.LaunchAsync(options);
+                    break;
+                case "webkit":
+                    browser = await _playwright!.WebKit.LaunchAsync(options);
+                    break;
+                default:
+                    browser = await _playwright!.Chromium.LaunchAsync(options);
+                    break;
+            }
+
+            // 创建上下文并应用指纹
+            var contextOptions = new BrowserNewContextOptions
+            {
+                ViewportSize = ParseResolution(env.Resolution),
+                UserAgent = string.IsNullOrEmpty(env.UserAgent) ? null : env.UserAgent,
+                IgnoreHTTPSErrors = true
+            };
+
+            // 设置语言
+            if (!string.IsNullOrEmpty(env.Languages))
+            {
+                var langs = env.Languages.Split(',');
+                contextOptions.Languages = langs;
+            }
+
+            var context = await browser.NewContextAsync(contextOptions);
+
+            // 应用高级指纹设置
+            await ApplyFingerprintAsync(context, env);
+
+            // 打开启动URL
+            if (!string.IsNullOrEmpty(env.StartupUrl))
+            {
+                var page = await context.NewPageAsync();
+                await page.GotoAsync(env.StartupUrl);
+            }
+
+            _browsers[env.Id] = browser;
+            return browser;
         }
-        catch (Exception ex)
+
+        public async Task CloseBrowserAsync(int envId)
         {
-            Log.Warning(ex, "代理测试失败: {ProxyUrl}", proxyUrl);
-            stopwatch.Stop();
-            return (false, (int)stopwatch.ElapsedMilliseconds);
+            if (_browsers.TryGetValue(envId, out var browser))
+            {
+                await browser.CloseAsync();
+                _browsers.Remove(envId);
+            }
+        }
+
+        public async Task OpenUrl(int envId, string url)
+        {
+            if (_browsers.TryGetValue(envId, out var browser))
+            {
+                var pages = browser.Contexts.SelectMany(c => c.Pages).ToList();
+                if (pages.Any())
+                {
+                    var page = pages.First();
+                    await page.BringToFrontAsync();
+                    await page.GotoAsync(url);
+                }
+                else
+                {
+                    var context = browser.Contexts.FirstOrDefault();
+                    if (context != null)
+                    {
+                        var page = await context.NewPageAsync();
+                        await page.GotoAsync(url);
+                    }
+                }
+            }
+        }
+
+        public async Task CloseAllBrowsersAsync()
+        {
+            foreach (var browser in _browsers.Values.ToList())
+            {
+                await browser.CloseAsync();
+            }
+            _browsers.Clear();
+        }
+
+        public bool IsBrowserRunning(int envId)
+        {
+            return _browsers.ContainsKey(envId);
+        }
+
+        private async Task ApplyFingerprintAsync(IBrowserContext context, BrowserEnvironment env)
+        {
+            var page = await context.NewPageAsync();
+
+            // WebGL 指纹
+            if (!string.IsNullOrEmpty(env.WebGLVendor))
+            {
+                await page.AddInitScriptAsync($@"
+                    WebGLRenderingContext.prototype.getParameter = function(parameter) {{
+                        if (parameter === 37445) return '{env.WebGLVendor}';
+                        if (parameter === 37446) return '{env.WebGLRenderer}';
+                        return this.getParameter(parameter);
+                    }};
+                ");
+            }
+
+            // WebRTC 指纹
+            if (!env.EnableWebRTC)
+            {
+                await page.AddInitScriptAsync(@"
+                    window.RTCPeerConnection = undefined;
+                    window.webkitRTCPeerConnection = undefined;
+                ");
+            }
+
+            // 时区
+            if (!string.IsNullOrEmpty(env.Timezone))
+            {
+                await context.AddInitScriptAsync($@"
+                    Intl.DateTimeFormat = new Proxy(Intl.DateTimeFormat, {{
+                        construct(target, args) {{
+                            const result = new target(...args);
+                            result.resolvedOptions = () => ({{
+                                ...target.prototype.resolvedOptions.call(result),
+                                timeZone: '{env.Timezone}'
+                            }});
+                            return result;
+                        }}
+                    }});
+                ");
+            }
+
+            await page.CloseAsync();
+        }
+
+        private ViewportSize? ParseResolution(string resolution)
+        {
+            if (string.IsNullOrEmpty(resolution)) return null;
+
+            var parts = resolution.Split('x');
+            if (parts.Length == 2 &&
+                int.TryParse(parts[0], out var width) &&
+                int.TryParse(parts[1], out var height))
+            {
+                return new ViewportSize { Width = width, Height = height };
+            }
+
+            return new ViewportSize { Width = 1920, Height = 1080 };
+        }
+
+        public async Task InstallBrowsersAsync()
+        {
+            if (_playwright == null)
+            {
+                await InitializeAsync();
+            }
+
+            await _playwright!.Chromium.InstallAsync();
+            await _playwright!.Firefox.InstallAsync();
+            await _playwright!.WebKit.InstallAsync();
         }
     }
 }

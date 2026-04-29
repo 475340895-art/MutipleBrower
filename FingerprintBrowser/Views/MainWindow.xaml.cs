@@ -1,201 +1,159 @@
 using System;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
-using FingerprintBrowser.ViewModels;
 using FingerprintBrowser.Models;
+using FingerprintBrowser.ViewModels;
+using HandyControl.Controls;
+using Window = HandyControl.Controls.Window;
 
-namespace FingerprintBrowser.Views;
-
-/// <summary>
-/// MainWindow.xaml 的交互逻辑
-/// </summary>
-public partial class MainWindow : HandyControl.Controls.Window
+namespace FingerprintBrowser.Views
 {
-    private readonly MainViewModel _viewModel;
-
-    public MainWindow()
+    public partial class MainWindow : Window
     {
-        InitializeComponent();
-        _viewModel = new MainViewModel();
-        DataContext = _viewModel;
-    }
+        private readonly MainViewModel _viewModel;
 
-    protected override void OnClosed(EventArgs e)
-    {
-        _viewModel.Cleanup();
-        base.OnClosed(e);
-    }
-
-    private void AddEnvironment_Click(object sender, RoutedEventArgs e)
-    {
-        var window = new EnvironmentEditWindow();
-        window.Owner = this;
-        if (window.ShowDialog() == true)
+        public MainWindow()
         {
-            _ = _viewModel.LoadEnvironmentsAsync(true);
+            InitializeComponent();
+            _viewModel = new MainViewModel();
+            DataContext = _viewModel;
+            Loaded += MainWindow_Loaded;
         }
-    }
 
-    private void EditEnvironment_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button btn && btn.Tag is int id)
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            var window = new EnvironmentEditWindow(id);
-            window.Owner = this;
-            if (window.ShowDialog() == true)
+            await _viewModel.InitializeAsync();
+        }
+
+        private async void CreateEnvironment_Click(object sender, RoutedEventArgs e)
+        {
+            await _viewModel.CreateEnvironmentCommand.ExecuteAsync(null);
+        }
+
+        private async void EditEnvironment_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is BrowserEnvironment env)
             {
-                _ = _viewModel.LoadEnvironmentsAsync(true);
+                await _viewModel.EditEnvironmentCommand.ExecuteAsync(env);
             }
         }
-    }
 
-    private void CopyEnvironment_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button btn && btn.Tag is int id)
+        private async void CopyEnvironment_Click(object sender, RoutedEventArgs e)
         {
-            _ = _viewModel.CopyEnvironmentAsync(id);
+            if (sender is FrameworkElement element && element.DataContext is BrowserEnvironment env)
+            {
+                await _viewModel.CopyEnvironmentCommand.ExecuteAsync(env);
+            }
         }
-    }
 
-    private void DeleteEnvironment_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button btn && btn.Tag is int id)
+        private async void DeleteEnvironment_Click(object sender, RoutedEventArgs e)
         {
-            _ = _viewModel.DeleteEnvironmentAsync(id);
+            if (sender is FrameworkElement element && element.DataContext is BrowserEnvironment env)
+            {
+                await _viewModel.DeleteEnvironmentCommand.ExecuteAsync(env);
+            }
         }
-    }
 
-    private void StartBrowser_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button btn && btn.Tag is int id)
+        private async void StartBrowser_Click(object sender, RoutedEventArgs e)
         {
-            _ = _viewModel.StartBrowserAsync(id);
+            if (sender is FrameworkElement element && element.DataContext is BrowserEnvironment env)
+            {
+                await _viewModel.StartBrowserCommand.ExecuteAsync(env);
+            }
         }
-    }
 
-    private void StopBrowser_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button btn && btn.Tag is int id)
+        private async void StopBrowser_Click(object sender, RoutedEventArgs e)
         {
-            _ = _viewModel.StopBrowserAsync(id);
+            if (sender is FrameworkElement element && element.DataContext is BrowserEnvironment env)
+            {
+                await _viewModel.StopBrowserCommand.ExecuteAsync(env);
+            }
         }
-    }
 
-    private void OpenUrl_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button btn && btn.Tag is int id)
+        private async void OpenBrowserUrl_Click(object sender, RoutedEventArgs e)
         {
-            _viewModel.OpenBrowserUrl(id);
+            if (sender is FrameworkElement element && element.DataContext is BrowserEnvironment env)
+            {
+                await _viewModel.OpenBrowserUrlCommand.ExecuteAsync(env);
+            }
         }
-    }
 
-    private void BatchStart_Click(object sender, RoutedEventArgs e)
-    {
-        _ = _viewModel.BatchStartAsync();
-    }
-
-    private void BatchStop_Click(object sender, RoutedEventArgs e)
-    {
-        _ = _viewModel.BatchStopAsync();
-    }
-
-    private void Import_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new Microsoft.Win32.OpenFileDialog
+        private async void BatchStart_Click(object sender, RoutedEventArgs e)
         {
-            Filter = "JSON文件|*.json|所有文件|*.*",
-            Title = "导入环境"
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            _ = _viewModel.ImportEnvironmentsAsync(dialog.FileName);
+            await _viewModel.BatchStartCommand.ExecuteAsync(null);
         }
-    }
 
-    private void Export_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new Microsoft.Win32.SaveFileDialog
+        private async void BatchStop_Click(object sender, RoutedEventArgs e)
         {
-            Filter = "JSON文件|*.json",
-            Title = "导出环境",
-            FileName = $"environments_{DateTime.Now:yyyyMMdd}.json"
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            _ = _viewModel.ExportEnvironmentsAsync(dialog.FileName);
+            await _viewModel.BatchStopCommand.ExecuteAsync(null);
         }
-    }
 
-    private void Settings_Click(object sender, RoutedEventArgs e)
-    {
-        var window = new SettingsWindow();
-        window.Owner = this;
-        window.ShowDialog();
-    }
-
-    private void ProxyManager_Click(object sender, RoutedEventArgs e)
-    {
-        var window = new ProxyWindow();
-        window.Owner = this;
-        window.ShowDialog();
-    }
-
-    private void ThemeLight_Click(object sender, RoutedEventArgs e)
-    {
-        _viewModel.ChangeThemeCommand.Execute("浅色");
-    }
-
-    private void ThemeDark_Click(object sender, RoutedEventArgs e)
-    {
-        _viewModel.ChangeThemeCommand.Execute("深色");
-    }
-
-    private void ThemeDarkBlue_Click(object sender, RoutedEventArgs e)
-    {
-        _viewModel.ChangeThemeCommand.Execute("深蓝");
-    }
-
-    private void EnvironmentGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (EnvironmentGrid.SelectedItem is BrowserEnvironment env)
+        private async void ImportEnvironments_Click(object sender, RoutedEventArgs e)
         {
-            _viewModel.ShowEnvironmentDetailsCommand.Execute(env);
+            await _viewModel.ImportEnvironmentsCommand.ExecuteAsync(null);
         }
-    }
 
-    private void CloseWindow_Click(object sender, RoutedEventArgs e)
-    {
-        Close();
-    }
-
-    private void MaximizeWindow_Click(object sender, RoutedEventArgs e)
-    {
-        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-    }
-
-    private void MinimizeWindow_Click(object sender, RoutedEventArgs e)
-    {
-        WindowState = WindowState.Minimized;
-    }
-
-    private void GroupFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (sender is ComboBox combo && combo.SelectedItem is EnvironmentGroup group)
+        private async void ExportEnvironments_Click(object sender, RoutedEventArgs e)
         {
-            _viewModel.SelectGroup(group);
+            await _viewModel.ExportEnvironmentsCommand.ExecuteAsync(null);
         }
-    }
 
-    private void GroupSearchBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        // Search functionality handled by ViewModel binding
-    }
+        private void OpenProxyManager_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel.OpenProxyManagerCommand.Execute(null);
+        }
 
-    private void EnvSearchBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        // Search functionality handled by ViewModel binding
+        private void OpenSettings_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel.OpenSettingsCommand.Execute(null);
+        }
+
+        private async void CreateGroup_Click(object sender, RoutedEventArgs e)
+        {
+            await _viewModel.CreateGroupCommand.ExecuteAsync(null);
+        }
+
+        private async void DeleteGroup_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is EnvironmentGroup group)
+            {
+                await _viewModel.DeleteGroupCommand.ExecuteAsync(group);
+            }
+        }
+
+        private async void Theme_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Header != null)
+            {
+                var theme = menuItem.Header.ToString()?.Replace("主题: ", "").Trim();
+                if (!string.IsNullOrEmpty(theme))
+                {
+                    await _viewModel.ChangeThemeAsync(theme);
+                }
+            }
+        }
+
+        private void EnvironmentList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (EnvironmentList?.SelectedItem is BrowserEnvironment env)
+            {
+                _viewModel.SelectedEnvironment = env;
+            }
+        }
+
+        private async void GroupList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (GroupList?.SelectedItem is EnvironmentGroup group)
+            {
+                await _viewModel.SelectGroupCommand.ExecuteAsync(group);
+            }
+        }
+
+        protected override async void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            await _viewModel.CleanupAsync();
+            base.OnClosing(e);
+        }
     }
 }

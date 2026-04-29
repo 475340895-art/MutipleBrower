@@ -1,17 +1,27 @@
-namespace FingerprintBrowser.Views;
+using System.Windows;
+using HandyControl.Controls;
 
-/// <summary>
-/// 启动画面窗口
-/// </summary>
-public partial class SplashWindow : HandyControl.Controls.Window
+namespace FingerprintBrowser.Views
 {
-    public SplashWindow()
+    /// <summary>
+    /// 启动画面窗口
+    /// </summary>
+    public partial class SplashWindow : HandyControl.Controls.Window
     {
-        InitializeComponent();
-    }
+        private System.Windows.Controls.TextBlock? _loadingText;
 
-    public void UpdateStatus(string status)
-    {
-        LoadingText.Text = status;
+        public SplashWindow()
+        {
+            InitializeComponent();
+            Loaded += (s, e) => _loadingText = FindName("LoadingText") as System.Windows.Controls.TextBlock;
+        }
+
+        public void UpdateStatus(string status)
+        {
+            if (_loadingText != null)
+            {
+                _loadingText.Text = status;
+            }
+        }
     }
 }
