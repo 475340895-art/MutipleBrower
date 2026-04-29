@@ -10,12 +10,12 @@ public static class StatusIndicatorFactory
     {
         var brush = status switch
         {
-            BrowserStatus.Idle => System.Windows.Media.Brushes.Gray,
-            BrowserStatus.Starting => System.Windows.Media.Brushes.Orange,
-            BrowserStatus.Running => System.Windows.Media.Brushes.LimeGreen,
-            BrowserStatus.Stopped => System.Windows.Media.Brushes.Gray,
-            BrowserStatus.Error => System.Windows.Media.Brushes.Red,
-            _ => System.Windows.Media.Brushes.Gray
+            BrowserStatus.Idle => Brushes.Gray,
+            BrowserStatus.Starting => Brushes.Orange,
+            BrowserStatus.Running => Brushes.LimeGreen,
+            BrowserStatus.Stopped => Brushes.Gray,
+            BrowserStatus.Error => Brushes.Red,
+            _ => Brushes.Gray
         };
 
         return new System.Windows.Shapes.Ellipse
@@ -23,7 +23,7 @@ public static class StatusIndicatorFactory
             Width = 10,
             Height = 10,
             Fill = brush,
-            Stroke = System.Windows.Media.Brushes.White,
+            Stroke = Brushes.White,
             StrokeThickness = 1
         };
     }
@@ -32,10 +32,11 @@ public static class StatusIndicatorFactory
     {
         var brush = status switch
         {
-            ProxyStatus.Available => System.Windows.Media.Brushes.LimeGreen,
-            ProxyStatus.Unavailable => System.Windows.Media.Brushes.Red,
-            ProxyStatus.Testing => System.Windows.Media.Brushes.Orange,
-            _ => System.Windows.Media.Brushes.Gray
+            ProxyStatus.Available => Brushes.LimeGreen,
+            ProxyStatus.Unavailable => Brushes.Red,
+            ProxyStatus.Testing => Brushes.Orange,
+            ProxyStatus.Unknown => Brushes.Gray,
+            _ => Brushes.Gray
         };
 
         return new System.Windows.Shapes.Ellipse
@@ -43,7 +44,7 @@ public static class StatusIndicatorFactory
             Width = 10,
             Height = 10,
             Fill = brush,
-            Stroke = System.Windows.Media.Brushes.White,
+            Stroke = Brushes.White,
             StrokeThickness = 1
         };
     }
