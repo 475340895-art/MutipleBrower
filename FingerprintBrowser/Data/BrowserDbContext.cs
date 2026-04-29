@@ -1,6 +1,8 @@
+using System;
 using System.IO;
-using FingerprintBrowser.Models;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using FingerprintBrowser.Models;
 
 namespace FingerprintBrowser.Data;
 
@@ -9,79 +11,76 @@ namespace FingerprintBrowser.Data;
 /// </summary>
 public class BrowserDbContext : DbContext
 {
+    private static readonly string DbPath = Path.Combine(
+        AppConstants.DefaultDataPath, "browser.db");
+
     public DbSet<BrowserEnvironment> Environments { get; set; } = null!;
     public DbSet<EnvironmentGroup> Groups { get; set; } = null!;
     public DbSet<ProxyConfig> Proxies { get; set; } = null!;
 
-    private readonly string _dbPath;
-
-    public BrowserDbContext()
-    {
-        var appDataPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "FingerprintBrowser");
-
-        Directory.CreateDirectory(appDataPath);
-        _dbPath = Path.Combine(appDataPath, "browser_data.db");
-    }
-
-    public BrowserDbContext(DbContextOptions<BrowserDbContext> options) : base(options)
-    {
-        _dbPath = string.Empty;
-    }
-
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        if (!optionsBuilder.IsConfigured)
+        var directory = Path.GetDirectoryName(DbPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
-            optionsBuilder.UseSqlite($"Data Source={_dbPath}");
+            Directory.CreateDirectory(directory);
         }
+
+        optionsBuilder.UseSqlite($"Data Source={DbPath}");
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // 环境表配置
+        // 环境配置
         modelBuilder.Entity<BrowserEnvironment>(entity =>
         {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Remark).HasMaxLength(500);
+            entity.Property(e => e.ProxyConfig).HasMaxLength(500);
+            entity.Property(e => e.StartupUrl).HasMaxLength(1000);
+            
+            entity.HasOne(e => e.Group)
+                  .WithMany(g => g.Environments)
+                  .HasForeignKey(e => e.GroupId)
+                  .OnDelete(DeleteBehavior.SetNull);
+                  
+            entity.HasOne(e => e.Proxy)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProxyId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.GroupId);
-            entity.HasIndex(e => e.Status);
-
-            entity.HasOne(e => e.Group)
-                .WithMany(g => g.Environments)
-                .HasForeignKey(e => e.GroupId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.Proxy)
-                .WithMany(p => p.Environments)
-                .HasForeignKey(e => e.ProxyId)
-                .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // 分组表配置
+        // 分组配置
         modelBuilder.Entity<EnvironmentGroup>(entity =>
         {
-            entity.HasIndex(e => e.Name).IsUnique();
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Color).HasMaxLength(7);
             entity.HasIndex(e => e.SortOrder);
         });
 
-        // 代理表配置
+        // 代理配置
         modelBuilder.Entity<ProxyConfig>(entity =>
         {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Type).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.Host).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Username).HasMaxLength(100);
+            entity.Property(e => e.Password).HasMaxLength(100);
+            entity.Property(e => e.Remark).HasMaxLength(200);
             entity.HasIndex(e => e.Host);
-            entity.HasIndex(e => e.Status);
         });
-
-        // 初始化默认数据
-        modelBuilder.Entity<EnvironmentGroup>().HasData(
-            new EnvironmentGroup { Id = 1, Name = "默认分组", Color = "#3B82F6", SortOrder = 0 }
-        );
     }
 
-    /// <summary>
-    /// 获取数据库文件路径
-    /// </summary>
-    public string GetDatabasePath() => _dbPath;
+    public static void EnsureCreated()
+    {
+        using var context = new BrowserDbContext();
+        context.Database.EnsureCreated();
+    }
 }

@@ -4,88 +4,183 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:vm="clr-namespace:FingerprintBrowser.ViewModels"
         mc:Ignorable="d"
         Title="设置"
         Height="550" Width="600"
-        MinHeight="500" MinWidth="500"
         WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource RegionBrush}">
+        Background="#0f0f1a"
+        NonClientAreaBackground="#12121f"
+        NonClientAreaForeground="White"
+        ResizeMode="NoResize">
 
-    <Window.DataContext>
-        <vm:SettingsViewModel/>
-    </Window.DataContext>
+    <Window.Resources>
+        <Style x:Key="SettingItem" TargetType="Border">
+            <Setter Property="Background" Value="#1a1a2e"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+        
+        <Style x:Key="SettingLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+        
+        <Style x:Key="SettingDesc" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#666688"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        
+        <Style x:Key="TechTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="#0f0f1a"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#3d3d5c"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="CaretBrush" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="#667eea"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 
-    <Grid Margin="20">
+    <Grid Margin="24">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+        <!-- 标题 -->
+        <TextBlock Grid.Row="0" Text="设置" FontSize="20" FontWeight="Bold" Foreground="White" Margin="0,0,0,20"/>
+
+        <!-- 设置内容 -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <!-- 外观设置 -->
-                <TextBlock Text="外观" Style="{StaticResource GroupHeaderStyle}"/>
-                <Border Style="{StaticResource InfoCardStyle}">
+                <TextBlock Text="外观" FontSize="12" Foreground="#666688" Margin="0,0,0,8"/>
+                <Border Style="{StaticResource SettingItem}">
                     <StackPanel>
-                        <Grid Margin="0,0,0,12">
-                            <TextBlock Text="主题" Style="{StaticResource InfoLabelStyle}"/>
-                            <ComboBox ItemsSource="{Binding AvailableThemes}"
-                                      SelectedItem="{Binding SelectedTheme}"
-                                      Width="150" HorizontalAlignment="Right"/>
-                        </Grid>
-                        <Grid>
-                            <TextBlock Text="语言" Style="{StaticResource InfoLabelStyle}"/>
-                            <ComboBox ItemsSource="{Binding AvailableLanguages}"
-                                      SelectedItem="{Binding SelectedLanguage}"
-                                      Width="150" HorizontalAlignment="Right"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- 常规设置 -->
-                <TextBlock Text="常规" Style="{StaticResource GroupHeaderStyle}"/>
-                <Border Style="{StaticResource InfoCardStyle}">
-                    <StackPanel>
-                        <CheckBox Content="开机自动启动" IsChecked="{Binding AutoStartWithSystem}" Margin="0,0,0,12"/>
-                        <CheckBox Content="最小化到系统托盘" IsChecked="{Binding MinimizeToTray}" Margin="0,0,0,12"/>
-                        <CheckBox Content="显示通知" IsChecked="{Binding ShowNotifications}"/>
+                        <TextBlock Style="{StaticResource SettingLabel}" Text="主题颜色"/>
+                        <TextBlock Style="{StaticResource SettingDesc}" Text="选择应用程序的主题外观" Margin="0,0,0,12"/>
+                        <ComboBox x:Name="ThemeComboBox" Width="200" HorizontalAlignment="Left"
+                                  SelectionChanged="ThemeComboBox_SelectionChanged">
+                            <ComboBoxItem Content="深色主题 (Dark)" Tag="Dark" IsSelected="True"/>
+                            <ComboBoxItem Content="浅色主题 (Light)" Tag="Light"/>
+                            <ComboBoxItem Content="深蓝主题 (DeepBlue)" Tag="DeepBlue"/>
+                        </ComboBox>
                     </StackPanel>
                 </Border>
 
                 <!-- 浏览器设置 -->
-                <TextBlock Text="浏览器" Style="{StaticResource GroupHeaderStyle}"/>
-                <Border Style="{StaticResource InfoCardStyle}">
+                <TextBlock Text="浏览器" FontSize="12" Foreground="#666688" Margin="0,16,0,8"/>
+                <Border Style="{StaticResource SettingItem}">
                     <StackPanel>
-                        <Grid Margin="0,0,0,12">
-                            <TextBlock Text="最大并发浏览器数" Style="{StaticResource InfoLabelStyle}"/>
-                            <hc:NumericUpDown Value="{Binding MaxConcurrentBrowsers}" 
-                                              Minimum="1" Maximum="50"
-                                              Width="120" HorizontalAlignment="Right"/>
-                        </Grid>
-                        <CheckBox Content="关闭时清除缓存" IsChecked="{Binding ClearCacheOnClose}" Margin="0,0,0,12"/>
-                        <CheckBox Content="关闭时清除Cookie" IsChecked="{Binding ClearCookiesOnClose}"/>
+                        <TextBlock Style="{StaticResource SettingLabel}" Text="浏览器启动延迟"/>
+                        <TextBlock Style="{StaticResource SettingDesc}" Text="启动浏览器前的随机延迟时间（秒）" Margin="0,0,0,12"/>
+                        <TextBox x:Name="LaunchDelayTextBox" Style="{StaticResource TechTextBox}" 
+                                 Width="100" HorizontalAlignment="Left" Text="0"/>
                     </StackPanel>
                 </Border>
 
-                <!-- 日志设置 -->
-                <TextBlock Text="日志" Style="{StaticResource GroupHeaderStyle}"/>
-                <Border Style="{StaticResource InfoCardStyle}">
+                <Border Style="{StaticResource SettingItem}">
                     <StackPanel>
-                        <CheckBox Content="启用日志记录" IsChecked="{Binding EnableLogging}" Margin="0,0,0,12"/>
-                        <Button Content="打开日志文件夹" Style="{StaticResource FunctionButtonStyle}"
-                                Command="{Binding OpenDataFolderCommand}" HorizontalAlignment="Left"/>
+                        <TextBlock Style="{StaticResource SettingLabel}" Text="并发启动数量"/>
+                        <TextBlock Style="{StaticResource SettingDesc}" Text="同时启动的浏览器最大数量" Margin="0,0,0,12"/>
+                        <TextBox x:Name="ConcurrentCountTextBox" Style="{StaticResource TechTextBox}" 
+                                 Width="100" HorizontalAlignment="Left" Text="5"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingItem}">
+                    <StackPanel>
+                        <CheckBox x:Name="CloseWithXCheckBox" Content="关闭按钮直接关闭浏览器" 
+                                  Foreground="White" FontSize="13"/>
+                        <TextBlock Style="{StaticResource SettingDesc}" Text="启用后，点击窗口关闭按钮会直接关闭浏览器而不只是最小化"
+                                   Margin="24,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 代理设置 -->
+                <TextBlock Text="代理" FontSize="12" Foreground="#666688" Margin="0,16,0,8"/>
+                <Border Style="{StaticResource SettingItem}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SettingLabel}" Text="代理测试超时"/>
+                        <TextBlock Style="{StaticResource SettingDesc}" Text="测试代理连接的超时时间（秒）" Margin="0,0,0,12"/>
+                        <TextBox x:Name="ProxyTimeoutTextBox" Style="{StaticResource TechTextBox}" 
+                                 Width="100" HorizontalAlignment="Left" Text="10"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 数据设置 -->
+                <TextBlock Text="数据" FontSize="12" Foreground="#666688" Margin="0,16,0,8"/>
+                <Border Style="{StaticResource SettingItem}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SettingLabel}" Text="数据存储路径"/>
+                        <TextBlock Style="{StaticResource SettingDesc}" Text="浏览器配置和数据的存储位置" Margin="0,0,0,12"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="DataPathTextBox" Style="{StaticResource TechTextBox}" 
+                                     IsReadOnly="True"/>
+                            <Button Grid.Column="1" Content="浏览" Padding="16,10" Margin="8,0,0,0"
+                                    Click="BrowseDataPath_Click"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingItem}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SettingLabel}" Text="自动备份"/>
+                        <TextBlock Style="{StaticResource SettingDesc}" Text="自动备份数据库的频率" Margin="0,0,0,12"/>
+                        <ComboBox x:Name="BackupComboBox" Width="200" HorizontalAlignment="Left">
+                            <ComboBoxItem Content="不自动备份" Tag="None"/>
+                            <ComboBoxItem Content="每天" Tag="Daily"/>
+                            <ComboBoxItem Content="每周" Tag="Weekly"/>
+                            <ComboBoxItem Content="每月" Tag="Monthly"/>
+                        </ComboBox>
+                    </StackPanel>
+                </Border>
+
+                <!-- 关于 -->
+                <TextBlock Text="关于" FontSize="12" Foreground="#666688" Margin="0,16,0,8"/>
+                <Border Style="{StaticResource SettingItem}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SettingLabel}" Text="指纹浏览器"/>
+                        <TextBlock Style="{StaticResource SettingDesc}" Text="版本: 1.0.0" Margin="0,0,0,4"/>
+                        <TextBlock Style="{StaticResource SettingDesc}" Text="基于 .NET 6 + WPF + Playwright"/>
                     </StackPanel>
                 </Border>
             </StackPanel>
         </ScrollViewer>
 
         <!-- 底部按钮 -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-            <Button Content="恢复默认" Style="{StaticResource FunctionButtonStyle}" 
-                    Command="{Binding ResetToDefaultsCommand}" Margin="0,0,8,0"/>
-            <Button Content="保存" Style="{StaticResource PrimaryActionButton}" 
-                    Command="{Binding SaveSettingsCommand}"/>
-        </StackPanel>
+        <Border Grid.Row="2" Padding="0,16,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="恢复默认" Padding="20,10" Margin="0,0,12,0" Click="Reset_Click"/>
+                <Button Content="取消" Padding="20,10" Margin="0,0,12,0" Click="Cancel_Click"/>
+                <Button Content="保存" Padding="20,10" 
+                        Background="#667eea" Foreground="White" Click="Save_Click"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </hc:Window>

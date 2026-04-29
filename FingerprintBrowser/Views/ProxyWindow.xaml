@@ -4,160 +4,196 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:vm="clr-namespace:FingerprintBrowser.ViewModels"
-        xmlns:converters="clr-namespace:FingerprintBrowser.Converters"
         mc:Ignorable="d"
         Title="代理管理"
-        Height="600" Width="900"
-        MinHeight="500" MinWidth="700"
+        Height="650" Width="900"
+        MinHeight="500" MinWidth="800"
         WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource RegionBrush}">
-
-    <Window.DataContext>
-        <vm:ProxyViewModel/>
-    </Window.DataContext>
+        Background="#0f0f1a"
+        NonClientAreaBackground="#12121f"
+        NonClientAreaForeground="White">
 
     <Window.Resources>
-        <converters:ProxyStatusToTextConverter x:Key="ProxyStatusTextConverter"/>
-        <converters:ProxyStatusToColorConverter x:Key="ProxyStatusColorConverter"/>
-        <converters:BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+        <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#00d4ff" Offset="0"/>
+            <GradientStop Color="#7c3aed" Offset="1"/>
+        </LinearGradientBrush>
+        
+        <Style x:Key="TechButton" TargetType="Button">
+            <Setter Property="Background" Value="#2d2d44"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16,10"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#3d3d5c"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource TechButton}">
+            <Setter Property="Background" Value="{StaticResource AccentGradient}"/>
+        </Style>
+        
+        <Style x:Key="TechTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="#1a1a2e"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#3d3d5c"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="CaretBrush" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="#667eea"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <Style x:Key="TechComboBox" TargetType="ComboBox">
+            <Setter Property="Background" Value="#1a1a2e"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#3d3d5c"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
     </Window.Resources>
 
-    <Grid Margin="16">
+    <Grid Margin="24">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- 标题 -->
+        <TextBlock Grid.Row="0" Text="代理管理" FontSize="20" FontWeight="Bold" Foreground="White" Margin="0,0,0,20"/>
+
         <!-- 工具栏 -->
-        <Border Grid.Row="0" Style="{StaticResource InfoCardStyle}">
-            <StackPanel Orientation="Horizontal">
-                <Button Style="{StaticResource FunctionButtonStyle}" Command="{Binding AddProxyCommand}">
-                    <StackPanel Orientation="Horizontal">
-                        <Path Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Fill="{DynamicResource PrimaryBrush}" Width="14" Height="14" Stretch="Uniform"/>
-                        <TextBlock Text="添加代理" Margin="6,0,0,0"/>
-                    </StackPanel>
-                </Button>
-
-                <Separator Style="{StaticResource VerticalSeparatorStyle}" Margin="8,0"/>
-
-                <Button Style="{StaticResource FunctionButtonStyle}" Command="{Binding TestProxyCommand}">
-                    <StackPanel Orientation="Horizontal">
-                        <Path Data="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z" Fill="{DynamicResource SuccessBrush}" Width="14" Height="14" Stretch="Uniform"/>
-                        <TextBlock Text="测试选中" Margin="6,0,0,0"/>
-                    </StackPanel>
-                </Button>
-
-                <Button Style="{StaticResource FunctionButtonStyle}" Command="{Binding TestAllProxiesCommand}">
-                    <StackPanel Orientation="Horizontal">
-                        <Path Data="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z" Fill="{DynamicResource WarningBrush}" Width="14" Height="14" Stretch="Uniform"/>
-                        <TextBlock Text="测试全部" Margin="6,0,0,0"/>
-                    </StackPanel>
-                </Button>
-
-                <Separator Style="{StaticResource VerticalSeparatorStyle}" Margin="8,0"/>
-
-                <Button Style="{StaticResource FunctionButtonStyle}" Command="{Binding ImportProxiesCommand}">
-                    <TextBlock Text="导入"/>
-                </Button>
-
-                <Button Style="{StaticResource FunctionButtonStyle}" Command="{Binding ExportProxiesCommand}">
-                    <TextBlock Text="导出"/>
-                </Button>
-            </StackPanel>
-        </Border>
+        <WrapPanel Grid.Row="1" Margin="0,0,0,16">
+            <Button Style="{StaticResource PrimaryButton}" Content="+ 添加代理" Click="AddProxy_Click" Margin="0,0,12,8"/>
+            <Button Style="{StaticResource TechButton}" Content="批量导入" Click="BatchImport_Click" Margin="0,0,12,8"/>
+            <Button Style="{StaticResource TechButton}" Content="批量测试" Click="BatchTest_Click" Margin="0,0,12,8"/>
+            <Button Style="{StaticResource TechButton}" Content="删除选中" Click="DeleteSelected_Click" Margin="0,0,12,8"/>
+            <Separator Style="{StaticResource VerticalSeparatorStyle}" Margin="8,0"/>
+            <TextBox x:Name="SearchBox" Width="200" Style="{StaticResource TechTextBox}" 
+                     hc:InfoElement.Placeholder="搜索代理..." Margin="0,0,12,8"
+                     TextChanged="SearchBox_TextChanged"/>
+        </WrapPanel>
 
         <!-- 代理列表 -->
-        <DataGrid Grid.Row="1"
-                  ItemsSource="{Binding Proxies}"
-                  SelectedItem="{Binding SelectedProxy}"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  CanUserDeleteRows="False"
-                  IsReadOnly="True"
-                  SelectionMode="Single"
-                  GridLinesVisibility="None"
-                  Margin="0,12,0,0">
+        <DataGrid Grid.Row="2" x:Name="ProxyGrid" AutoGenerateColumns="False"
+                  Background="Transparent" BorderThickness="0" GridLinesVisibility="None"
+                  HeadersVisibility="Column" RowBackground="Transparent"
+                  AlternatingRowBackground="#151525" CanUserAddRows="False"
+                  SelectionMode="Extended" CanUserResizeRows="False">
+            <DataGrid.ColumnHeaderStyle>
+                <Style TargetType="DataGridColumnHeader">
+                    <Setter Property="Background" Value="#0f0f1a"/>
+                    <Setter Property="Foreground" Value="#8888aa"/>
+                    <Setter Property="Padding" Value="12,10"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </Style>
+            </DataGrid.ColumnHeaderStyle>
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="Foreground" Value="#e0e0e0"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Padding" Value="12,8"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="DataGridCell">
+                                <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="#2a2a4a"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.CellStyle>
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#1e1e32"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <!-- 状态 -->
+                <DataGridCheckBoxColumn Header="" Width="40"/>
                 <DataGridTemplateColumn Header="状态" Width="70">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="8" Height="8" Margin="0,0,6,0"
-                                         Fill="{Binding Status, Converter={StaticResource ProxyStatusColorConverter}}"/>
-                                <TextBlock Text="{Binding Status, Converter={StaticResource ProxyStatusTextConverter}}"
-                                           Foreground="{Binding Status, Converter={StaticResource ProxyStatusColorConverter}}"/>
-                            </StackPanel>
+                            <Ellipse Width="10" Height="10" HorizontalAlignment="Center">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="#666688"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Status}" Value="Available">
+                                                <Setter Property="Fill" Value="#00ff88"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Status}" Value="Unavailable">
+                                                <Setter Property="Fill" Value="#ff4466"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Status}" Value="Testing">
+                                                <Setter Property="Fill" Value="#ffaa00"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-
-                <!-- 名称 -->
-                <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="*">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
-
-                <!-- 类型 -->
-                <DataGridTextColumn Header="类型" Binding="{Binding ProxyType}" Width="80">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
-
-                <!-- 地址 -->
-                <DataGridTextColumn Header="地址" Width="200">
-                    <DataGridTextColumn.Binding>
-                        <Binding Path="Host" StringFormat="{}{0}:{Port}"/>
-                    </DataGridTextColumn.Binding>
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
-
-                <!-- 响应时间 -->
-                <DataGridTextColumn Header="响应时间" Binding="{Binding ResponseTime, StringFormat={}{0}ms}" Width="100">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
-
-                <!-- 上次测试 -->
-                <DataGridTextColumn Header="上次测试" Binding="{Binding LastTestTime, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="140">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
-
-                <!-- 操作 -->
-                <DataGridTemplateColumn Header="操作" Width="100">
+                <DataGridTextColumn Header="协议" Binding="{Binding Type}" Width="70"/>
+                <DataGridTextColumn Header="地址" Binding="{Binding Host}" Width="180"/>
+                <DataGridTextColumn Header="端口" Binding="{Binding Port}" Width="80"/>
+                <DataGridTextColumn Header="用户名" Binding="{Binding Username}" Width="120"/>
+                <DataGridTextColumn Header="延迟" Binding="{Binding Latency, StringFormat='{}{0}ms'}" Width="80"/>
+                <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*"/>
+                <DataGridTemplateColumn Header="操作" Width="140">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                <Button Style="{StaticResource IconButtonStyle}" ToolTip="编辑"
-                                        Command="{Binding DataContext.EditProxyCommand, RelativeSource={RelativeSource AncestorType=Window}}">
-                                    <Path Data="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" Fill="{DynamicResource PrimaryBrush}" Width="12" Height="12" Stretch="Uniform"/>
-                                </Button>
-                                <Button Style="{StaticResource IconButtonStyle}" ToolTip="删除"
-                                        Command="{Binding DataContext.DeleteProxyCommand, RelativeSource={RelativeSource AncestorType=Window}}">
-                                    <Path Data="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" Fill="{DynamicResource DangerBrush}" Width="12" Height="12" Stretch="Uniform"/>
-                                </Button>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="测试" Style="{StaticResource TechButton}" 
+                                        Padding="8,4" Margin="0,0,4,0" Click="TestProxy_Click"/>
+                                <Button Content="删除" Style="{StaticResource TechButton}" 
+                                        Padding="8,4" Foreground="#ff6688" Click="DeleteProxy_Click"/>
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
@@ -165,30 +201,17 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <!-- 底部状态栏 -->
-        <Border Grid.Row="2" Background="{DynamicResource SecondRegionBrush}" Padding="12,6" Margin="0,12,0,0">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center"
-                           Foreground="{DynamicResource SecondaryTextBrush}"/>
-
-                <TextBlock Grid.Column="1" VerticalAlignment="Center" 
-                           Foreground="{DynamicResource SecondaryTextBrush}">
-                    <Run Text="总计:"/>
-                    <Run Text="{Binding Proxies.Count, Mode=OneWay}"/>
-                    <Run Text="个代理"/>
-                </TextBlock>
-            </Grid>
-        </Border>
-
-        <!-- 加载遮罩 -->
-        <Border Grid.RowSpan="3" Background="#80000000" 
-                Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisConverter}}">
-            <hc:LoadingCircle/>
+        <!-- 底部状态 -->
+        <Border Grid.Row="3" Background="#12121f" CornerRadius="8" Padding="16,12" Margin="0,16,0,0">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="ProxyCountText" Text="共 0 个代理" Foreground="#8888aa" VerticalAlignment="Center"/>
+                <TextBlock Text=" | " Foreground="#444466" Margin="12,0"/>
+                <Ellipse Width="8" Height="8" Fill="#00ff88" Margin="0,0,6,0"/>
+                <TextBlock x:Name="AvailableCountText" Text="可用: 0" Foreground="#8888aa" VerticalAlignment="Center"/>
+                <TextBlock Text=" | " Foreground="#444466" Margin="12,0"/>
+                <Ellipse Width="8" Height="8" Fill="#ff4466" Margin="0,0,6,0"/>
+                <TextBlock x:Name="UnavailableCountText" Text="不可用: 0" Foreground="#8888aa" VerticalAlignment="Center"/>
+            </StackPanel>
         </Border>
     </Grid>
 </hc:Window>
