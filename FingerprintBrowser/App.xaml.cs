@@ -1,137 +1,114 @@
+using System;
 using System.IO;
 using System.Windows;
+using System.Windows.Threading;
 using FingerprintBrowser.Data;
-using FingerprintBrowser.Services;
-using Microsoft.EntityFrameworkCore;
-using Serilog;
-using Application = System.Windows.Application;
-using MessageBox = System.Windows.MessageBox;
+using FingerprintBrowser.Views;
 
 namespace FingerprintBrowser;
 
-/// <summary>
-/// 应用程序入口类
-/// </summary>
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
-    private static readonly string LogPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "FingerprintBrowser", "logs", "app-.log");
-
-    public App()
+    private SplashWindow? _splash;
+    
+    private void Application_Startup(object sender, StartupEventArgs e)
     {
-        // 配置 Serilog 日志
-        Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
-            .WriteTo.File(LogPath,
-                rollingInterval: RollingInterval.Day,
-                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-            .CreateLogger();
-
-        // 全局异常处理
-        AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
-        {
-            Log.Fatal(args.ExceptionObject as Exception, "未处理的异常");
-            Log.CloseAndFlush();
-        };
-
-        DispatcherUnhandledException += (sender, args) =>
-        {
-            Log.Error(args.Exception, "UI 线程异常");
-            args.Handled = true;
-        };
-
-        TaskScheduler.UnobservedTaskException += (sender, args) =>
-        {
-            Log.Error(args.Exception, "未观察的任务异常");
-            args.SetObserved();
-        };
+        // 显示启动画面
+        _splash = new SplashWindow();
+        _splash.Show();
+        
+        // 设置未处理异常处理
+        DispatcherUnhandledException += App_DispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        
+        // 初始化数据库
+        InitializeDatabase();
     }
-
-    protected override void OnStartup(StartupEventArgs e)
+    
+    private void InitializeDatabase()
     {
-        Log.Information("=== 应用程序启动 ===");
-
         try
         {
-            // 初始化数据库
-            InitializeDatabase();
-
-            // 初始化服务
-            ServiceLocator.Initialize();
-
-            // 初始化 Playwright
-            _ = PlaywrightService.Instance.EnsureInstalledAsync();
-
-            Log.Information("应用程序初始化完成");
+            _splash?.UpdateStatus("正在初始化数据库...");
+            _splash?.SetProgress(20);
+            
+            var dbPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "FingerprintBrowser",
+                "data.db");
+            
+            var dbDir = Path.GetDirectoryName(dbPath);
+            if (!string.IsNullOrEmpty(dbDir) && !Directory.Exists(dbDir))
+            {
+                Directory.CreateDirectory(dbDir);
+            }
+            
+            _splash?.UpdateStatus("正在创建数据库...");
+            _splash?.SetProgress(40);
+            
+            DatabaseInitializer.Initialize(dbPath);
+            
+            _splash?.UpdateStatus("正在加载配置...");
+            _splash?.SetProgress(70);
+            
+            // 关闭启动画面并显示主窗口
+            _splash?.SetProgress(100);
+            _splash?.Complete();
+            
+            _splash?.Close();
+            
+            var mainWindow = new MainWindow();
+            mainWindow.Show();
         }
         catch (Exception ex)
         {
-            Log.Fatal(ex, "应用程序启动失败");
-            MessageBox.Show($"启动失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            _splash?.Close();
+            System.Windows.MessageBox.Show($"启动失败: {ex.Message}", "错误",
+                MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
-            return;
         }
-
-        base.OnStartup(e);
     }
-
-    protected override void OnExit(ExitEventArgs e)
+    
+    private void Application_Exit(object sender, ExitEventArgs e)
     {
-        Log.Information("=== 应用程序退出 ===");
-        ServiceLocator.Cleanup();
-        Log.CloseAndFlush();
-        base.OnExit(e);
+        // 清理资源
+        Services.BrowserService.Instance.Cleanup();
     }
-
-    private static void InitializeDatabase()
+    
+    private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        Log.Information("初始化数据库...");
-
-        using var context = new BrowserDbContext();
-        context.Database.EnsureCreated();
-
-        Log.Information("数据库初始化完成");
+        LogError("未处理异常", e.Exception);
+        System.Windows.MessageBox.Show($"发生错误: {e.Exception.Message}", "错误",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+        e.Handled = true;
     }
-}
-
-/// <summary>
-/// 服务定位器 - 简单的依赖注入容器
-/// </summary>
-public static class ServiceLocator
-{
-    private static readonly Dictionary<Type, object> Services = new();
-
-    public static void Initialize()
+    
+    private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        // 注册服务
-        Register<IDialogService>(new DialogService());
-        Register<IBrowserService>(new BrowserService());
-        Register<IProxyService>(new ProxyService());
-        Register<IImportExportService>(new ImportExportService());
-
-        Log.Information("服务定位器初始化完成");
-    }
-
-    public static void Register<T>(T service) where T : class
-    {
-        Services[typeof(T)] = service;
-    }
-
-    public static T Get<T>() where T : class
-    {
-        return Services.TryGetValue(typeof(T), out var service)
-            ? (T)service
-            : throw new InvalidOperationException($"服务 {typeof(T).Name} 未注册");
-    }
-
-    public static void Cleanup()
-    {
-        // 清理服务
-        if (Services.TryGetValue(typeof(IBrowserService), out var browserService))
+        if (e.ExceptionObject is Exception ex)
         {
-            (browserService as IDisposable)?.Dispose();
+            LogError("未处理异常", ex);
         }
-        Services.Clear();
+    }
+    
+    private static void LogError(string context, Exception ex)
+    {
+        try
+        {
+            var logPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "FingerprintBrowser",
+                "error.log");
+            
+            var logDir = Path.GetDirectoryName(logPath);
+            if (!string.IsNullOrEmpty(logDir) && !Directory.Exists(logDir))
+            {
+                Directory.CreateDirectory(logDir);
+            }
+            
+            var message = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {context}: {ex}\n";
+            File.AppendAllText(logPath, message);
+        }
+        catch { }
     }
 }

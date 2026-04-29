@@ -1,121 +1,79 @@
-using System.Collections.Concurrent;
-using FingerprintBrowser.Models;
 using Microsoft.Playwright;
+using FingerprintBrowser.Models;
 
 namespace FingerprintBrowser.Services;
 
 public class BrowserService
 {
-    private static BrowserService? _instance;
-    public static BrowserService Instance => _instance ??= new BrowserService();
-
-    private readonly ConcurrentDictionary<int, IBrowser> _runningBrowsers = new();
-    private readonly ConcurrentDictionary<int, IBrowserContext> _contexts = new();
-    private readonly ConcurrentDictionary<int, IPage> _pages = new();
-    private readonly PlaywrightService _playwright = PlaywrightService.Instance;
-    private int _maxConcurrency = 5;
-    private readonly SemaphoreSlim _semaphore;
-
-    private BrowserService()
+    private readonly Dictionary<int, IBrowserContext> _runningContexts = new();
+    private readonly PlaywrightService _playwrightService;
+    private readonly SemaphoreSlim _semaphore = new(5);
+    
+    public BrowserService()
     {
-        _semaphore = new SemaphoreSlim(_maxConcurrency, _maxConcurrency);
+        _playwrightService = new PlaywrightService();
     }
-
-    public void SetMaxConcurrency(int count)
+    
+    public async Task StartBrowserAsync(BrowserEnvironment env)
     {
-        _maxConcurrency = count;
-    }
-
-    public async Task LaunchBrowserAsync(BrowserEnvironment env)
-    {
+        if (_runningContexts.ContainsKey(env.Id))
+        {
+            var context = _runningContexts[env.Id];
+            var pages = context.Pages;
+            if (pages.Count > 0) await pages[0].BringToFrontAsync();
+            return;
+        }
+        
         await _semaphore.WaitAsync();
         try
         {
-            var proxy = string.IsNullOrEmpty(env.ProxyInfo) ? null : new Proxy
+            var context = await _playwrightService.CreateContextAsync(env);
+            _runningContexts[env.Id] = context;
+            
+            if (!string.IsNullOrEmpty(env.StartupUrl))
             {
-                Server = env.ProxyInfo,
-                Username = env.ProxyConfig?.Username,
-                Password = env.ProxyConfig?.Password
-            };
-
-            var options = new BrowserTypeLaunchOptions
-            {
-                Headless = false,
-                Args = new[] { "--disable-blink-features=AutomationControlled" }
-            };
-
-            var browser = await _playwright.LaunchAsync(options);
-            var context = await browser.NewContextAsync(new BrowserNewContextOptions
-            {
-                ViewportSize = ParseResolution(env.Resolution),
-                UserAgent = env.UserAgent,
-                Locale = env.Languages?.Split(',')[0] ?? "zh-CN",
-                Proxy = proxy,
-                IgnoreHTTPSErrors = true
-            });
-
-            var page = await context.NewPageAsync();
-            await page.AddInitScriptAsync(@"Object.defineProperty(navigator, 'webdriver', {get: () => false});");
-
-            if (!string.IsNullOrEmpty(env.WebGLVendor))
-            {
-                await context.AddInitScriptAsync($@"
-                    const originalGetContext = HTMLCanvasElement.prototype.getContext;
-                    HTMLCanvasElement.prototype.getContext = function(type, options) {{
-                        const ctx = originalGetContext.call(this, type, options);
-                        if (type === 'webgl' || type === 'webgl2') {{
-                            const vendor = '{env.WebGLVendor}';
-                            const renderer = '{env.WebGLRenderer}';
-                            if (ctx) {{
-                                const getParameter = ctx.getParameter;
-                                ctx.getParameter = function(param) {{
-                                    if (param === 37445) return vendor;
-                                    if (param === 37446) return renderer;
-                                    return getParameter.call(this, param);
-                                }};
-                            }}
-                        }}
-                        return ctx;
-                    }};
-                ");
+                var page = await context.NewPageAsync();
+                await page.GotoAsync(env.StartupUrl);
             }
-
-            _runningBrowsers[env.Id] = browser;
-            _contexts[env.Id] = context;
-            _pages[env.Id] = page;
+            
+            env.Status = BrowserStatus.Running;
+            env.RunningBrowserId = env.Id;
         }
-        catch
+        finally
         {
             _semaphore.Release();
-            throw;
         }
     }
-
-    public async Task CloseBrowserAsync(int envId)
+    
+    public async Task StopBrowserAsync(int environmentId)
     {
-        if (_pages.TryRemove(envId, out var page)) await page.CloseAsync();
-        if (_contexts.TryRemove(envId, out var context)) await context.CloseAsync();
-        if (_runningBrowsers.TryRemove(envId, out var browser)) await browser.CloseAsync();
-        _semaphore.Release();
-    }
-
-    public async Task OpenUrl(int envId, string url)
-    {
-        if (_pages.TryGetValue(envId, out var page))
+        if (_runningContexts.TryGetValue(environmentId, out var context))
         {
-            await page.BringToFrontAsync();
-            await page.GotoAsync(url);
+            await context.CloseAsync();
+            _runningContexts.Remove(environmentId);
         }
     }
-
-    private (int Width, int Height) ParseResolution(string? resolution)
+    
+    public async Task OpenUrlAsync(int environmentId, string url)
     {
-        if (string.IsNullOrEmpty(resolution)) return (1920, 1080);
-        var parts = resolution.Split('x');
-        if (parts.Length == 2 && int.TryParse(parts[0], out int w) && int.TryParse(parts[1], out int h))
-            return (w, h);
-        return (1920, 1080);
+        if (_runningContexts.TryGetValue(environmentId, out var context))
+        {
+            var pages = context.Pages;
+            if (pages.Count > 0)
+            {
+                await pages[0].BringToFrontAsync();
+                await pages[0].GotoAsync(url);
+            }
+        }
     }
-
-    public bool IsRunning(int envId) => _runningBrowsers.ContainsKey(envId);
+    
+    public async Task CleanupAsync()
+    {
+        foreach (var context in _runningContexts.Values)
+        {
+            await context.CloseAsync();
+        }
+        _runningContexts.Clear();
+        _playwrightService.Dispose();
+    }
 }

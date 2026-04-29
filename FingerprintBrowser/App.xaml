@@ -1,32 +1,44 @@
 <Application x:Class="FingerprintBrowser.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:hc="https://handyorg.github.io/handycontrol"
-             xmlns:converters="clr-namespace:FingerprintBrowser.Converters"
-             StartupUri="Views/MainWindow.xaml">
+             StartupUri="Views/MainWindow.xaml"
+             Startup="Application_Startup"
+             Exit="Application_Exit">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- HandyControl 主题 -->
                 <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/SkinDark.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/Theme.xaml"/>
-                
-                <!-- 自定义资源 -->
-                <ResourceDictionary Source="/Resources/CustomStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             
-            <!-- 全局转换器 -->
-            <converters:BoolToVisConverter x:Key="BoolToVisConverter"/>
-            <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-            <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
-            <converters:StatusColorConverter x:Key="StatusColorConverter"/>
-            <converters:StatusTextConverter x:Key="StatusTextConverter"/>
-            <converters:ProxyStatusColorConverter x:Key="ProxyStatusColorConverter"/>
-            <converters:ProxyStatusTextConverter x:Key="ProxyStatusTextConverter"/>
-            <converters:DateTimeConverter x:Key="DateTimeConverter"/>
-            <converters:HexToBrushConverter x:Key="HexToBrushConverter"/>
-            <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
-            <converters:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
+            <!-- 自定义样式 -->
+            <SolidColorBrush x:Key="PrimaryBrush" Color="#667EEA"/>
+            <SolidColorBrush x:Key="SecondaryBrush" Color="#764BA2"/>
+            <SolidColorBrush x:Key="SuccessBrush" Color="#10B981"/>
+            <SolidColorBrush x:Key="WarningBrush" Color="#F59E0B"/>
+            <SolidColorBrush x:Key="DangerBrush" Color="#EF4444"/>
+            
+            <!-- 渐变画刷 -->
+            <LinearGradientBrush x:Key="PrimaryGradientBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#667EEA" Offset="0"/>
+                <GradientStop Color="#764BA2" Offset="1"/>
+            </LinearGradientBrush>
+            
+            <!-- 按钮样式 -->
+            <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource ButtonPrimary}">
+                <Setter Property="Background" Value="{StaticResource PrimaryGradientBrush}"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Padding" Value="16,8"/>
+            </Style>
+            
+            <!-- 卡片样式 -->
+            <Style x:Key="CardBorder" TargetType="Border">
+                <Setter Property="Background" Value="#252536"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Padding" Value="16"/>
+                <Setter Property="Margin" Value="0,0,0,10"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

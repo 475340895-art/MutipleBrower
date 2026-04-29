@@ -2,54 +2,54 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FingerprintBrowser.Models;
 
-public enum BrowserStatus { Idle, Starting, Running, Stopping, Error }
-public enum ProxyStatus { Unknown, Available, Unavailable, Testing }
-public enum ProxyType { HTTP, HTTPS, SOCKS5 }
+public enum BrowserStatus { Idle = 0, Starting = 1, Running = 2, Error = 3 }
+public enum ProxyStatus { Unknown = 0, Available = 1, Unavailable = 2 }
+public enum ProxyType { HTTP = 0, HTTPS = 1, SOCKS5 = 2 }
 
 public class BrowserEnvironment
 {
     [Key] public int Id { get; set; }
-    [Required][MaxLength(200)] public string Name { get; set; } = "";
-    [MaxLength(100)] public string? GroupName { get; set; }
-    [MaxLength(500)] public string? UserAgent { get; set; }
-    [MaxLength(50)] public string? Resolution { get; set; }
-    [MaxLength(100)] public string? Timezone { get; set; }
-    [MaxLength(100)] public string? Languages { get; set; }
+    public string Name { get; set; } = "";
+    public int? GroupId { get; set; }
+    public EnvironmentGroup? Group { get; set; }
+    public string? StartupUrl { get; set; }
+    public string? UserAgent { get; set; }
+    public string? Resolution { get; set; }
+    public string? Timezone { get; set; }
+    public string? Languages { get; set; }
+    public string? WebGLVendor { get; set; }
+    public string? WebGLRenderer { get; set; }
     public bool EnableWebRTC { get; set; } = true;
     public bool EnableCookies { get; set; } = true;
     public bool EnableJavaScript { get; set; } = true;
-    [MaxLength(200)] public string? WebGLVendor { get; set; }
-    [MaxLength(200)] public string? WebGLRenderer { get; set; }
-    [MaxLength(1000)] public string? Remark { get; set; }
-    [MaxLength(50)] public string BrowserType { get; set; } = "Chromium";
-    public ProxyConfig? ProxyConfig { get; set; }
+    public string? ProxyConfig { get; set; }
+    public string? Remark { get; set; }
     public BrowserStatus Status { get; set; } = BrowserStatus.Idle;
+    public int? RunningBrowserId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
-    public DateTime? LastUsedAt { get; set; }
-    public string? ProxyInfo => ProxyConfig != null ? $"{ProxyConfig.Host}:{ProxyConfig.Port}" : "无代理";
-}
-
-public class ProxyConfig
-{
-    [Key] public int Id { get; set; }
-    [Required][MaxLength(200)] public string Name { get; set; } = "";
-    [Required][MaxLength(200)] public string Host { get; set; } = "";
-    public int Port { get; set; }
-    public string Type { get; set; } = "HTTP";
-    [MaxLength(200)] public string? Username { get; set; }
-    [MaxLength(200)] public string? Password { get; set; }
-    [MaxLength(1000)] public string? Remark { get; set; }
-    public ProxyStatus Status { get; set; } = ProxyStatus.Unknown;
-    public int? Latency { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
-    public DateTime? LastTestAt { get; set; }
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
 }
 
 public class EnvironmentGroup
 {
     [Key] public int Id { get; set; }
-    [Required][MaxLength(100)] public string Name { get; set; } = "";
-    [MaxLength(7)] public string Color { get; set; } = "#1E88E5";
+    public string Name { get; set; } = "";
+    public string Color { get; set; } = "#667eea";
     public int SortOrder { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public ICollection<BrowserEnvironment> Environments { get; set; } = new List<BrowserEnvironment>();
+}
+
+public class ProxyConfigModel
+{
+    [Key] public int Id { get; set; }
+    public string Host { get; set; } = "";
+    public int Port { get; set; }
+    public string? Username { get; set; }
+    public string? Password { get; set; }
+    public ProxyType Type { get; set; } = ProxyType.HTTP;
+    public string? Remark { get; set; }
+    public ProxyStatus Status { get; set; } = ProxyStatus.Unknown;
+    public int? Latency { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 }

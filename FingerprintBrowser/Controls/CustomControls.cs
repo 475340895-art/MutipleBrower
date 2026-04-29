@@ -1,83 +1,66 @@
 using System.Windows;
 using System.Windows.Media;
-using System.Windows.Shapes;
 using FingerprintBrowser.Models;
 
 namespace FingerprintBrowser.Controls;
 
-public static class StatusIndicator
+public static class StatusIndicatorFactory
 {
-    public static Ellipse CreateBrowserStatus(BrowserStatus status)
+    public static System.Windows.Shapes.Ellipse CreateBrowserStatusIndicator(BrowserStatus status)
     {
-        var ellipse = new Ellipse { Width = 10, Height = 10 };
-        ellipse.SetValue(FillProperty, GetStatusBrush(status));
-        return ellipse;
+        return new System.Windows.Shapes.Ellipse
+        {
+            Width = 10,
+            Height = 10,
+            Fill = GetBrowserStatusBrush(status),
+            Stroke = Brushes.White,
+            StrokeThickness = 1
+        };
     }
-
-    public static Ellipse CreateProxyStatus(ProxyStatus status)
+    
+    public static System.Windows.Shapes.Rectangle CreateProxyStatusIndicator(ProxyStatus status)
     {
-        var ellipse = new Ellipse { Width = 10, Height = 10 };
-        ellipse.SetValue(FillProperty, GetProxyStatusBrush(status));
-        return ellipse;
+        return new System.Windows.Shapes.Rectangle
+        {
+            Width = 10,
+            Height = 10,
+            Fill = GetProxyStatusBrush(status),
+            RadiusX = 2,
+            RadiusY = 2
+        };
     }
-
-    private static Brush GetStatusBrush(BrowserStatus status)
+    
+    public static System.Windows.Shapes.Ellipse CreateColorIndicator(string hexColor)
+    {
+        var color = (Color)ColorConverter.ConvertFromString(hexColor);
+        return new System.Windows.Shapes.Ellipse
+        {
+            Width = 16,
+            Height = 16,
+            Fill = new SolidColorBrush(color)
+        };
+    }
+    
+    private static Brush GetBrowserStatusBrush(BrowserStatus status)
     {
         return status switch
         {
-            BrowserStatus.Running => new SolidColorBrush(Color.FromRgb(52, 211, 153)),
-            BrowserStatus.Starting => new SolidColorBrush(Color.FromRgb(251, 191, 36)),
-            BrowserStatus.Stopping => new SolidColorBrush(Color.FromRgb(251, 191, 36)),
-            BrowserStatus.Error => new SolidColorBrush(Color.FromRgb(248, 113, 113)),
-            _ => new SolidColorBrush(Color.FromRgb(156, 163, 175))
+            BrowserStatus.Running => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4ade80")),
+            BrowserStatus.Starting => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#fbbf24")),
+            BrowserStatus.Stopped => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9ca3af")),
+            BrowserStatus.Error => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#f87171")),
+            _ => Brushes.Gray
         };
     }
-
+    
     private static Brush GetProxyStatusBrush(ProxyStatus status)
     {
         return status switch
         {
-            ProxyStatus.Available => new SolidColorBrush(Color.FromRgb(52, 211, 153)),
-            ProxyStatus.Testing => new SolidColorBrush(Color.FromRgb(96, 165, 250)),
-            ProxyStatus.Unavailable => new SolidColorBrush(Color.FromRgb(248, 113, 113)),
-            _ => new SolidColorBrush(Color.FromRgb(156, 163, 175))
+            ProxyStatus.Available => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4ade80")),
+            ProxyStatus.Testing => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#fbbf24")),
+            ProxyStatus.Unavailable => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#f87171")),
+            _ => Brushes.Gray
         };
-    }
-
-    public static Rectangle CreateColorIndicator(string color)
-    {
-        try
-        {
-            var c = (Color)ColorConverter.ConvertFromString(color);
-            return new Rectangle
-            {
-                Width = 16,
-                Height = 16,
-                Fill = new SolidColorBrush(c),
-                RadiusX = 4,
-                RadiusY = 4
-            };
-        }
-        catch
-        {
-            return new Rectangle { Width = 16, Height = 16, Fill = Brushes.Gray };
-        }
-    }
-}
-
-public static class ColorIndicator
-{
-    public static Brush ParseColor(string? colorStr)
-    {
-        if (string.IsNullOrEmpty(colorStr)) return Brushes.Gray;
-        try
-        {
-            var c = (Color)ColorConverter.ConvertFromString(colorStr);
-            return new SolidColorBrush(c);
-        }
-        catch
-        {
-            return Brushes.Gray;
-        }
     }
 }
