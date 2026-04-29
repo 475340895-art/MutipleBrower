@@ -5,6 +5,9 @@ namespace FingerprintBrowser.Services;
 
 public class PlaywrightService
 {
+    private static PlaywrightService? _instance;
+    public static PlaywrightService Instance => _instance ??= new PlaywrightService();
+    
     private IPlaywright? _playwright;
     private IBrowser? _browser;
     private readonly SemaphoreSlim _semaphore = new(5);

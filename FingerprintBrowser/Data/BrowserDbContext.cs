@@ -7,7 +7,7 @@ public class BrowserDbContext : DbContext
 {
     public DbSet<BrowserEnvironment> BrowserEnvironments { get; set; } = null!;
     public DbSet<EnvironmentGroup> EnvironmentGroups { get; set; } = null!;
-    public DbSet<ProxyConfig> ProxyConfigs { get; set; } = null!;
+    public DbSet<ProxyConfigModel> ProxyConfigs { get; set; } = null!;
 
     public string DbPath { get; }
 

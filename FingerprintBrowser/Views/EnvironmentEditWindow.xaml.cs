@@ -5,7 +5,12 @@ namespace FingerprintBrowser.Views;
 
 public partial class EnvironmentEditWindow : HandyControl.Controls.Window
 {
-    public BrowserEnvironment? Result { get; private set; }
+    public BrowserEnvironment? Result { get; private set;     public void SetEnvironment(BrowserEnvironment env)
+    {
+        Result = env;
+        DataContext = Result;
+    }
+}
 
     public EnvironmentEditWindow(BrowserEnvironment? env = null)
     {

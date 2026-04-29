@@ -20,21 +20,18 @@ public class BrowserService
         _semaphore = new SemaphoreSlim(AppConstants.MaxConcurrency);
     }
 
-    public async Task<BrowserLaunchResult> LaunchBrowserAsync(BrowserEnvironment environment)
+    public async Task<(bool Success, string? ErrorMessage)> LaunchBrowserAsync(BrowserEnvironment environment)
     {
         try
         {
             await _semaphore.WaitAsync();
-            var result = await _playwrightService.LaunchBrowserAsync(environment);
-            if (result.Success && result.Browser != null)
-            {
-                _runningBrowsers[environment.Id] = result.Browser;
-            }
-            return result;
+            var browser = await _playwrightService.LaunchBrowserAsync(environment);
+            _runningBrowsers[environment.Id] = browser;
+            return (true, null);
         }
         catch (Exception ex)
         {
-            return new BrowserLaunchResult { Success = false, ErrorMessage = ex.Message };
+            return (false, ex.Message);
         }
     }
 

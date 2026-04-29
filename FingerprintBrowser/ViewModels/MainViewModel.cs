@@ -133,7 +133,7 @@ public class MainViewModel : INotifyPropertyChanged
         {
             filtered = filtered.Where(e =>
                 e.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
-                (e.Remarks?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ?? false));
+                (e.Remark?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ?? false));
         }
 
         foreach (var env in filtered)
