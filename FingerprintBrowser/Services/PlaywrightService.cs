@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using FingerprintBrowser.Models;
 using Microsoft.Playwright;
 using Serilog;
@@ -20,6 +21,7 @@ public interface IBrowser : IAsyncDisposable
 /// </summary>
 public class PlaywrightBrowser : IBrowser
 {
+    private readonly IPlaywright _playwright;
     private readonly IBrowser _browser;
     private readonly IBrowserContext _context;
     private IPage? _currentPage;
@@ -27,8 +29,9 @@ public class PlaywrightBrowser : IBrowser
     public IBrowserContext Context => _context;
     public IPage? CurrentPage => _currentPage;
 
-    public PlaywrightBrowser(IBrowser browser, IBrowserContext context)
+    public PlaywrightBrowser(IPlaywright playwright, IBrowser browser, IBrowserContext context)
     {
+        _playwright = playwright;
         _browser = browser;
         _context = context;
     }
@@ -74,7 +77,6 @@ public class PlaywrightService
     public static PlaywrightService Instance => _instance.Value;
 
     private IPlaywright? _playwright;
-    private IBrowser? _browser;
     private bool _isInstalled;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
 
@@ -98,8 +100,25 @@ public class PlaywrightService
             if (!Directory.Exists(playwrightPath))
             {
                 Log.Information("正在安装 Playwright 浏览器驱动...");
-                await Microsoft.Playwright.Program.Install(new string[] { "install", "chromium" });
-                _isInstalled = true;
+
+                // 使用 Process 调用 playwright CLI 安装
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd",
+                    Arguments = "/c npx playwright install chromium",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                using var process = Process.Start(startInfo);
+                if (process != null)
+                {
+                    await process.WaitForExitAsync();
+                }
+
+                _isInstalled = Directory.Exists(playwrightPath);
                 Log.Information("Playwright 浏览器驱动安装完成");
             }
             else
@@ -123,11 +142,14 @@ public class PlaywrightService
         await _semaphore.WaitAsync();
         try
         {
-            _playwright ??= await Microsoft.Playwright.Playwright.CreateAsync();
+            _playwright ??= await Playwright.CreateAsync();
 
             // 创建浏览器上下文（隔离环境）
             var contextOptions = CreateContextOptions(environment);
-            _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+            var context = await _playwright.Chromium.NewContextAsync(contextOptions);
+
+            // 启动浏览器
+            var browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {
                 Headless = false,
                 Args = new[]
@@ -138,10 +160,8 @@ public class PlaywrightService
                 }
             });
 
-            var context = await _browser.NewContextAsync(contextOptions);
-
-            // 打开URL
-            var browserImpl = new PlaywrightBrowser(_browser, context);
+            // 创建包装器
+            var browserImpl = new PlaywrightBrowser(_playwright, browser, context);
             if (!string.IsNullOrEmpty(environment.StartupUrl))
             {
                 await browserImpl.OpenUrlAsync(environment.StartupUrl);
@@ -177,9 +197,6 @@ public class PlaywrightService
             // 用户代理
             UserAgent = env.UserAgent ?? GenerateUserAgent(),
 
-            // 地理位置（如果需要）
-            // Geolocation = new Geolocation { Longitude = 116.4, Latitude = 39.9 },
-
             // 权限
             Permissions = new[] { "geolocation", "notifications" },
 
@@ -187,18 +204,8 @@ public class PlaywrightService
             TimezoneId = env.TimeZoneId ?? GetTimezoneId(env.TimeZone),
 
             // 语言
-            Locale = env.Language ?? "zh-CN",
-
-            // 平台（注意：此参数可能不支持，但会尝试）
-            // Platform = env.Platform
+            Locale = env.Language ?? "zh-CN"
         };
-
-        // WebGL 配置（通过启动参数）
-        if (!string.IsNullOrEmpty(env.WebGlVendor) && !string.IsNullOrEmpty(env.WebGlRenderer))
-        {
-            // 这些通常通过浏览器启动参数设置
-            // Playwright 可能需要自定义 CDP 会话来实现
-        }
 
         return options;
     }
@@ -266,7 +273,7 @@ public class PlaywrightService
 
         try
         {
-            using var playwright = await Microsoft.Playwright.Playwright.CreateAsync();
+            using var playwright = await Playwright.CreateAsync();
 
             var proxy = new Proxy
             {
