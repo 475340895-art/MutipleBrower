@@ -97,7 +97,7 @@ public class MainViewModel : INotifyPropertyChanged
 
     private async Task LoadGroupsAsync()
     {
-        var groups = await _db.EnvironmentGroups.ToListAsync();
+        var groups = await _db.Groups.ToListAsync();
         Groups.Clear();
         Groups.Add(new EnvironmentGroup { Id = 0, Name = "全部分组", Color = "#667EEA" });
         foreach (var group in groups)
@@ -108,7 +108,7 @@ public class MainViewModel : INotifyPropertyChanged
 
     public async Task LoadEnvironmentsAsync()
     {
-        var envs = await _db.BrowserEnvironments.ToListAsync();
+        var envs = await _db.Environments.ToListAsync();
         Environments.Clear();
         foreach (var env in envs)
         {
@@ -266,7 +266,7 @@ public class MainViewModel : INotifyPropertyChanged
     public async Task AddGroupAsync(string name, string color)
     {
         var group = new EnvironmentGroup { Name = name, Color = color };
-        _db.EnvironmentGroups.Add(group);
+        _db.Groups.Add(group);
         await _db.SaveChangesAsync();
         await LoadGroupsAsync();
     }
@@ -274,7 +274,7 @@ public class MainViewModel : INotifyPropertyChanged
     public async Task DeleteGroupAsync(EnvironmentGroup? group)
     {
         if (group == null || group.Id == 0) return;
-        _db.EnvironmentGroups.Remove(group);
+        _db.Groups.Remove(group);
         await _db.SaveChangesAsync();
         await LoadGroupsAsync();
     }
