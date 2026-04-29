@@ -46,7 +46,7 @@ public interface IBrowserService : IDisposable
 /// </summary>
 public class BrowserService : IBrowserService
 {
-    private readonly Dictionary<int, IBrowser> _runningBrowsers = new();
+    private readonly Dictionary<int, IBrowserWrapper> _runningBrowsers = new();
     private readonly object _lock = new();
 
     public async Task<bool> StartEnvironmentAsync(BrowserEnvironment environment)
@@ -100,7 +100,7 @@ public class BrowserService : IBrowserService
     {
         try
         {
-            IBrowser? browser;
+            IBrowserWrapper? browser;
             lock (_lock)
             {
                 _runningBrowsers.TryGetValue(environmentId, out browser);

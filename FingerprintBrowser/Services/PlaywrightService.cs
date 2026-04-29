@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using FingerprintBrowser.Models;
 using Microsoft.Playwright;
 using Serilog;
@@ -6,9 +7,9 @@ using Serilog;
 namespace FingerprintBrowser.Services;
 
 /// <summary>
-/// Playwright 浏览器接口
+/// 浏览器包装器接口
 /// </summary>
-public interface IBrowser : IAsyncDisposable
+public interface IBrowserWrapper : IAsyncDisposable
 {
     IBrowserContext Context { get; }
     IPage? CurrentPage { get; }
@@ -17,9 +18,9 @@ public interface IBrowser : IAsyncDisposable
 }
 
 /// <summary>
-/// Playwright 实现
+/// Playwright 浏览器包装器
 /// </summary>
-public class PlaywrightBrowser : IBrowser
+public class PlaywrightBrowserWrapper : IBrowserWrapper
 {
     private readonly IPlaywright _playwright;
     private readonly IBrowser _browser;
@@ -29,7 +30,7 @@ public class PlaywrightBrowser : IBrowser
     public IBrowserContext Context => _context;
     public IPage? CurrentPage => _currentPage;
 
-    public PlaywrightBrowser(IPlaywright playwright, IBrowser browser, IBrowserContext context)
+    public PlaywrightBrowserWrapper(IPlaywright playwright, IBrowser browser, IBrowserContext context)
     {
         _playwright = playwright;
         _browser = browser;
@@ -137,7 +138,7 @@ public class PlaywrightService
     /// <summary>
     /// 创建浏览器实例
     /// </summary>
-    public async Task<IBrowser?> CreateBrowserAsync(BrowserEnvironment environment)
+    public async Task<IBrowserWrapper?> CreateBrowserAsync(BrowserEnvironment environment)
     {
         await _semaphore.WaitAsync();
         try
@@ -161,7 +162,7 @@ public class PlaywrightService
             var context = await browser.NewContextAsync(contextOptions);
 
             // 创建包装器
-            var browserImpl = new PlaywrightBrowser(_playwright, browser, context);
+            var browserImpl = new PlaywrightBrowserWrapper(_playwright, browser, context);
             if (!string.IsNullOrEmpty(environment.StartupUrl))
             {
                 await browserImpl.OpenUrlAsync(environment.StartupUrl);
@@ -172,13 +173,6 @@ public class PlaywrightService
         catch (Exception ex)
         {
             Log.Error(ex, "创建浏览器实例失败");
-            return null;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
-    }
             return null;
         }
         finally
