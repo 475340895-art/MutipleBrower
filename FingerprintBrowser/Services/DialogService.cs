@@ -185,12 +185,14 @@ public class DialogService : IDialogService
     {
         Log.Debug("显示文件夹选择对话框");
 
-        var dialog = new OpenFolderDialog
+        var dialog = new System.Windows.Forms.FolderBrowserDialog
         {
+            Description = "选择文件夹",
+            ShowNewFolderButton = true,
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
         };
 
-        return dialog.ShowDialog() == true ? dialog.FolderName : null;
+        return dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK ? dialog.SelectedPath : null;
     }
 }
 
@@ -334,18 +336,5 @@ public class PasswordDialog : System.Windows.Window
             Children = { grid, buttonPanel },
             Margin = new Thickness(0, 0, 0, 10)
         };
-    }
-}
-
-/// <summary>
-/// 文件夹选择对话框
-/// </summary>
-public class OpenFolderDialog : System.Windows.Forms.FolderBrowserDialog
-{
-    public OpenFolderDialog()
-    {
-        Description = "选择文件夹";
-        UseDescriptionForTitle = true;
-        ShowNewFolderButton = true;
     }
 }
