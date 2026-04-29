@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using FingerprintBrowser.Data;
 using FingerprintBrowser.Models;
+using Serilog;
 
 namespace FingerprintBrowser.Services;
 
@@ -16,10 +17,11 @@ namespace FingerprintBrowser.Services;
 public class BrowserService
 {
     private readonly PlaywrightService _playwrightService;
+    private readonly Dictionary<int, IBrowserWrapper> _runningBrowsers = new();
 
     public BrowserService()
     {
-        _playwrightService = new PlaywrightService();
+        _playwrightService = PlaywrightService.Instance;
     }
 
     #region 分组管理
@@ -90,10 +92,10 @@ public class BrowserService
             using var context = new BrowserDbContext();
             var envs = context.Environments
                 .Include(e => e.Group)
-                .OrderByDescending(e => e.CreatedAt)
+                .Include(e => e.Proxy)
+                .OrderBy(e => e.CreatedAt)
                 .ToList();
 
-            // 填充UI显示用字段
             foreach (var env in envs)
             {
                 env.GroupName = env.Group?.Name ?? "默认分组";
@@ -152,13 +154,9 @@ public class BrowserService
             context.Environments.Add(environment);
             context.SaveChanges();
             
+            Log.Information("创建浏览器环境: {Name}", environment.Name);
             return environment;
         });
-    }
-
-    public void CreateEnvironment(BrowserEnvironment environment)
-    {
-        CreateEnvironmentAsync(environment).GetAwaiter().GetResult();
     }
 
     public Task UpdateEnvironmentAsync(BrowserEnvironment environment)
@@ -178,31 +176,30 @@ public class BrowserService
                 existing.ScreenHeight = environment.ScreenHeight;
                 existing.Timezone = environment.Timezone;
                 existing.Languages = environment.Languages;
+                existing.WebglVendor = environment.WebglVendor;
+                existing.WebglRenderer = environment.WebglRenderer;
+                existing.BrowserType = environment.BrowserType;
                 existing.UseProxy = environment.UseProxy;
                 existing.ProxyId = environment.ProxyId;
                 existing.ProxyConfig = environment.ProxyConfig;
-                existing.BrowserType = environment.BrowserType;
                 existing.UpdatedAt = DateTime.Now;
-
                 context.SaveChanges();
             }
         });
     }
 
-    public void UpdateEnvironment(BrowserEnvironment environment)
-    {
-        UpdateEnvironmentAsync(environment).GetAwaiter().GetResult();
-    }
-
-    public Task DeleteEnvironmentAsync(int id)
+    public Task DeleteEnvironmentAsync(int environmentId)
     {
         return Task.Run(async () =>
         {
-            // 先停止浏览器
-            await StopBrowserAsync(id);
-            
+            // 先关闭浏览器
+            if (_runningBrowsers.ContainsKey(environmentId))
+            {
+                await CloseBrowserInternalAsync(environmentId);
+            }
+
             using var context = new BrowserDbContext();
-            var env = context.Environments.Find(id);
+            var env = context.Environments.Find(environmentId);
             if (env != null)
             {
                 context.Environments.Remove(env);
@@ -211,19 +208,41 @@ public class BrowserService
         });
     }
 
-    public Task<BrowserEnvironment> CopyEnvironmentAsync(int id)
+    public Task<BrowserEnvironment> CopyEnvironmentAsync(int environmentId)
     {
-        return Task.Run(async () =>
+        return Task.Run(() =>
         {
-            var original = await GetEnvironmentAsync(id);
+            using var context = new BrowserDbContext();
+            var original = context.Environments.Find(environmentId);
             if (original == null)
-            {
                 throw new Exception("环境不存在");
-            }
 
-            var clone = original.Clone();
-            clone.Id = 0;
-            return await CreateEnvironmentAsync(clone);
+            var copy = new BrowserEnvironment
+            {
+                Name = original.Name + " (副本)",
+                GroupId = original.GroupId,
+                Remark = original.Remark,
+                StartupUrl = original.StartupUrl,
+                UserAgent = original.UserAgent,
+                ScreenWidth = original.ScreenWidth,
+                ScreenHeight = original.ScreenHeight,
+                Timezone = original.Timezone,
+                Languages = original.Languages,
+                WebglVendor = original.WebglVendor,
+                WebglRenderer = original.WebglRenderer,
+                BrowserType = original.BrowserType,
+                UseProxy = original.UseProxy,
+                ProxyId = original.ProxyId,
+                ProxyConfig = original.ProxyConfig,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            };
+
+            context.Environments.Add(copy);
+            context.SaveChanges();
+            
+            Log.Information("复制浏览器环境: {Name}", copy.Name);
+            return copy;
         });
     }
 
@@ -248,18 +267,32 @@ public class BrowserService
 
             try
             {
-                await _playwrightService.LaunchBrowserAsync(env);
+                // 创建浏览器实例
+                var browserWrapper = await _playwrightService.CreateBrowserAsync(env);
+                if (browserWrapper != null)
+                {
+                    _runningBrowsers[environmentId] = browserWrapper;
+                    
+                    // 打开启动URL
+                    if (!string.IsNullOrEmpty(env.StartupUrl))
+                    {
+                        await browserWrapper.OpenUrlAsync(env.StartupUrl);
+                    }
+                }
                 
                 // 更新状态为运行中
                 env.Status = 1; // Running
                 env.LastRunTime = DateTime.Now;
                 context.SaveChanges();
+                
+                Log.Information("启动浏览器环境: {Name}", env.Name);
             }
-            catch
+            catch (Exception ex)
             {
                 // 更新状态为错误
                 env.Status = 4; // Error
                 context.SaveChanges();
+                Log.Error(ex, "启动浏览器环境失败: {Name}", env.Name);
                 throw;
             }
         });
@@ -279,23 +312,44 @@ public class BrowserService
 
             try
             {
-                await _playwrightService.CloseBrowserAsync(environmentId);
+                await CloseBrowserInternalAsync(environmentId);
                 
                 // 更新状态为空闲
                 env.Status = 0; // Idle
                 context.SaveChanges();
+                
+                Log.Information("关闭浏览器环境: {Name}", env.Name);
             }
-            catch
+            catch (Exception ex)
             {
                 env.Status = 0;
                 context.SaveChanges();
+                Log.Error(ex, "关闭浏览器环境失败: {Name}", env.Name);
             }
         });
     }
 
+    private async Task CloseBrowserInternalAsync(int environmentId)
+    {
+        if (_runningBrowsers.TryGetValue(environmentId, out var browser))
+        {
+            await browser.CloseAsync();
+            _runningBrowsers.Remove(environmentId);
+        }
+    }
+
     public void OpenBrowserUrl(int environmentId)
     {
-        _playwrightService.OpenUrl(environmentId);
+        if (_runningBrowsers.TryGetValue(environmentId, out var browser))
+        {
+            // 获取环境配置的启动URL并打开
+            using var context = new BrowserDbContext();
+            var env = context.Environments.Find(environmentId);
+            if (env != null && !string.IsNullOrEmpty(env.StartupUrl))
+            {
+                _ = browser.OpenUrlAsync(env.StartupUrl);
+            }
+        }
     }
 
     public Task BatchStartAsync()
@@ -344,48 +398,33 @@ public class BrowserService
 
     #region 导入导出
 
-    public Task ImportEnvironmentsAsync(string filePath)
+    public async Task ImportEnvironmentsAsync(string filePath)
     {
-        return Task.Run(async () =>
+        var json = await File.ReadAllTextAsync(filePath);
+        var environments = JsonSerializer.Deserialize<List<BrowserEnvironment>>(json);
+        
+        if (environments == null) return;
+
+        using var context = new BrowserDbContext();
+        foreach (var env in environments)
         {
-            if (!File.Exists(filePath))
-            {
-                throw new FileNotFoundException("导入文件不存在");
-            }
-
-            var json = await File.ReadAllTextAsync(filePath);
-            var envs = JsonSerializer.Deserialize<List<BrowserEnvironment>>(json);
-            
-            if (envs == null || !envs.Any())
-            {
-                throw new Exception("导入文件中没有有效的环境数据");
-            }
-
-            using var context = new BrowserDbContext();
-            
-            foreach (var env in envs)
-            {
-                env.Id = 0; // 重置ID以创建新记录
-                env.CreatedAt = DateTime.Now;
-                env.UpdatedAt = DateTime.Now;
-                context.Environments.Add(env);
-            }
-            
-            await context.SaveChangesAsync();
-        });
+            env.Id = 0; // 重置ID
+            env.CreatedAt = DateTime.Now;
+            env.UpdatedAt = DateTime.Now;
+            context.Environments.Add(env);
+        }
+        context.SaveChanges();
+        
+        Log.Information("导入 {Count} 个浏览器环境", environments.Count);
     }
 
-    public Task ExportEnvironmentsAsync(string filePath)
+    public async Task ExportEnvironmentsAsync(string filePath)
     {
-        return Task.Run(async () =>
-        {
-            var envs = await GetEnvironmentsAsync();
-            var json = JsonSerializer.Serialize(envs, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
-            await File.WriteAllTextAsync(filePath, json);
-        });
+        var envs = await GetEnvironmentsAsync();
+        var json = JsonSerializer.Serialize(envs, new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(filePath, json);
+        
+        Log.Information("导出 {Count} 个浏览器环境", envs.Count);
     }
 
     #endregion

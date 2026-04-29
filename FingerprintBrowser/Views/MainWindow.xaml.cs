@@ -1,7 +1,9 @@
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using FingerprintBrowser.ViewModels;
+using FingerprintBrowser.Models;
 
 namespace FingerprintBrowser.Views;
 
@@ -37,7 +39,7 @@ public partial class MainWindow : HandyControl.Controls.Window
 
     private void EditEnvironment_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is System.Windows.Controls.Button btn && btn.Tag is int id)
+        if (sender is Button btn && btn.Tag is int id)
         {
             var window = new EnvironmentEditWindow(id);
             window.Owner = this;
@@ -50,7 +52,7 @@ public partial class MainWindow : HandyControl.Controls.Window
 
     private void CopyEnvironment_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is System.Windows.Controls.Button btn && btn.Tag is int id)
+        if (sender is Button btn && btn.Tag is int id)
         {
             _ = _viewModel.CopyEnvironmentAsync(id);
         }
@@ -58,7 +60,7 @@ public partial class MainWindow : HandyControl.Controls.Window
 
     private void DeleteEnvironment_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is System.Windows.Controls.Button btn && btn.Tag is int id)
+        if (sender is Button btn && btn.Tag is int id)
         {
             _ = _viewModel.DeleteEnvironmentAsync(id);
         }
@@ -66,7 +68,7 @@ public partial class MainWindow : HandyControl.Controls.Window
 
     private void StartBrowser_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is System.Windows.Controls.Button btn && btn.Tag is int id)
+        if (sender is Button btn && btn.Tag is int id)
         {
             _ = _viewModel.StartBrowserAsync(id);
         }
@@ -74,7 +76,7 @@ public partial class MainWindow : HandyControl.Controls.Window
 
     private void StopBrowser_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is System.Windows.Controls.Button btn && btn.Tag is int id)
+        if (sender is Button btn && btn.Tag is int id)
         {
             _ = _viewModel.StopBrowserAsync(id);
         }
@@ -82,7 +84,7 @@ public partial class MainWindow : HandyControl.Controls.Window
 
     private void OpenUrl_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is System.Windows.Controls.Button btn && btn.Tag is int id)
+        if (sender is Button btn && btn.Tag is int id)
         {
             _viewModel.OpenBrowserUrl(id);
         }
@@ -143,24 +145,24 @@ public partial class MainWindow : HandyControl.Controls.Window
 
     private void ThemeLight_Click(object sender, RoutedEventArgs e)
     {
-        _viewModel.ChangeTheme("浅色");
+        _viewModel.ChangeThemeCommand.Execute("浅色");
     }
 
     private void ThemeDark_Click(object sender, RoutedEventArgs e)
     {
-        _viewModel.ChangeTheme("深色");
+        _viewModel.ChangeThemeCommand.Execute("深色");
     }
 
     private void ThemeDarkBlue_Click(object sender, RoutedEventArgs e)
     {
-        _viewModel.ChangeTheme("深蓝");
+        _viewModel.ChangeThemeCommand.Execute("深蓝");
     }
 
-    private void EnvironmentList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    private void EnvironmentGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (EnvironmentList.SelectedItem is Models.BrowserEnvironment env)
+        if (EnvironmentGrid.SelectedItem is BrowserEnvironment env)
         {
-            _viewModel.ShowEnvironmentDetails(env);
+            _viewModel.ShowEnvironmentDetailsCommand.Execute(env);
         }
     }
 
@@ -179,11 +181,21 @@ public partial class MainWindow : HandyControl.Controls.Window
         WindowState = WindowState.Minimized;
     }
 
-    private void GroupFilter_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    private void GroupFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (sender is System.Windows.Controls.ComboBox combo && combo.SelectedItem is Models.EnvironmentGroup group)
+        if (sender is ComboBox combo && combo.SelectedItem is EnvironmentGroup group)
         {
             _viewModel.SelectGroup(group);
         }
+    }
+
+    private void GroupSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        // Search functionality handled by ViewModel binding
+    }
+
+    private void EnvSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        // Search functionality handled by ViewModel binding
     }
 }

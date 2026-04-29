@@ -10,7 +10,7 @@ using HandyControl.Controls;
 
 namespace FingerprintBrowser.Views
 {
-    public partial class ProxyWindow
+    public partial class ProxyWindow : HandyControl.Controls.Window
     {
         private readonly ProxyViewModel _viewModel;
 
