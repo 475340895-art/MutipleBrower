@@ -1,52 +1,38 @@
 using System.Collections.ObjectModel;
-using CommunityToolkit.Mvvm;
-using FingerprintBrowser.Data;
+using System.Net.Sockets;
 using FingerprintBrowser.Models;
 using FingerprintBrowser.Services;
-using Microsoft.EntityFrameworkCore;
-using Serilog;
 
 namespace FingerprintBrowser.ViewModels;
 
-public partial class ProxyViewModel : ObservableObject
+public class ProxyViewModel
 {
+    public ObservableCollection<ProxyConfig> Proxies { get; set; } = new();
+    public ProxyConfig? SelectedProxy { get; set; }
+    public string SearchText { get; set; } = "";
+    public bool IsLoading { get; set; }
+    public string StatusMessage { get; set; } = "就绪";
+
     private readonly BrowserDbContext _db;
-    private readonly ProxyService _proxyService;
-
-    [ObservableProperty]
-    private ObservableCollection<ProxyConfig> _proxies = new();
-
-    [ObservableProperty]
-    private ProxyConfig? _selectedProxy;
-
-    [ObservableProperty]
-    private bool _isLoading;
-
-    [ObservableProperty]
-    private string _statusMessage = string.Empty;
 
     public ProxyViewModel()
     {
         _db = new BrowserDbContext();
-        _proxyService = new ProxyService();
     }
 
     public async Task LoadProxiesAsync()
     {
+        IsLoading = true;
         try
         {
-            IsLoading = true;
-            StatusMessage = "正在加载代理...";
-
-            var list = await _db.Proxies.OrderBy(p => p.Name).ToListAsync();
-            Proxies = new ObservableCollection<ProxyConfig>(list);
-
-            StatusMessage = $"已加载 {list.Count} 个代理";
+            var proxies = await Task.Run(() => _db.Proxies.ToList());
+            Proxies.Clear();
+            foreach (var p in proxies) Proxies.Add(p);
+            StatusMessage = $"已加载 {Proxies.Count} 个代理";
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "加载代理失败");
-            StatusMessage = "加载失败";
+            StatusMessage = $"加载失败: {ex.Message}";
         }
         finally
         {
@@ -54,143 +40,95 @@ public partial class ProxyViewModel : ObservableObject
         }
     }
 
-    public async Task AddProxyAsync(ProxyConfig proxy)
+    public async Task AddProxyAsync(string name, string host, int port, string type, string? username, string? password, string? remark)
     {
-        try
+        var proxy = new ProxyConfig
         {
-            _db.Proxies.Add(proxy);
-            await _db.SaveChangesAsync();
-            await LoadProxiesAsync();
-            StatusMessage = "代理添加成功";
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "添加代理失败");
-            StatusMessage = "添加失败";
-        }
+            Name = name,
+            Host = host,
+            Port = port,
+            Type = type,
+            Username = username,
+            Password = password,
+            Remark = remark
+        };
+        _db.Proxies.Add(proxy);
+        _db.SaveChanges();
+        Proxies.Add(proxy);
+        StatusMessage = "代理已添加";
     }
 
-    public async Task UpdateProxyAsync(ProxyConfig proxy)
+    public async Task DeleteProxyAsync(ProxyConfig proxy)
     {
-        try
-        {
-            _db.Proxies.Update(proxy);
-            await _db.SaveChangesAsync();
-            await LoadProxiesAsync();
-            StatusMessage = "代理更新成功";
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "更新代理失败");
-            StatusMessage = "更新失败";
-        }
+        _db.Proxies.Remove(proxy);
+        _db.SaveChanges();
+        Proxies.Remove(proxy);
+        StatusMessage = "代理已删除";
     }
 
-    public async Task DeleteProxyAsync(int id)
+    public async Task DeleteSelectedAsync()
     {
-        try
-        {
-            var proxy = await _db.Proxies.FindAsync(id);
-            if (proxy != null)
-            {
-                _db.Proxies.Remove(proxy);
-                await _db.SaveChangesAsync();
-                await LoadProxiesAsync();
-                StatusMessage = "代理删除成功";
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "删除代理失败");
-            StatusMessage = "删除失败";
-        }
-    }
-
-    public async Task DeleteSelectedAsync(IEnumerable<int> ids)
-    {
-        try
-        {
-            var proxies = await _db.Proxies.Where(p => ids.Contains(p.Id)).ToListAsync();
-            _db.Proxies.RemoveRange(proxies);
-            await _db.SaveChangesAsync();
-            await LoadProxiesAsync();
-            StatusMessage = $"已删除 {proxies.Count} 个代理";
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "批量删除代理失败");
-            StatusMessage = "批量删除失败";
-        }
+        if (SelectedProxy == null) return;
+        await DeleteProxyAsync(SelectedProxy);
     }
 
     public async Task TestSingleProxyAsync(ProxyConfig proxy)
     {
+        proxy.Status = ProxyStatus.Testing;
+        StatusMessage = $"正在测试 {proxy.Host}:{proxy.Port}...";
+        
         try
         {
-            proxy.Status = ProxyStatus.Testing;
-            var result = await _proxyService.TestProxyAsync(proxy);
+            using var client = new TcpClient();
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            await client.ConnectAsync(proxy.Host, proxy.Port);
+            stopwatch.Stop();
             
-            proxy.Status = result.Success ? ProxyStatus.Available : ProxyStatus.Unavailable;
-            proxy.Latency = result.ResponseTime;
-            proxy.LastTestedAt = DateTime.Now;
-
-            await _db.SaveChangesAsync();
-            OnPropertyChanged(nameof(SelectedProxy));
+            proxy.Status = ProxyStatus.Available;
+            proxy.Latency = (int)stopwatch.ElapsedMilliseconds;
+            proxy.LastTestAt = DateTime.Now;
+            StatusMessage = $"代理可用，延迟 {proxy.Latency}ms";
         }
-        catch (Exception ex)
+        catch
         {
-            Log.Error(ex, "测试代理失败");
             proxy.Status = ProxyStatus.Unavailable;
+            proxy.Latency = null;
+            StatusMessage = "代理不可用";
         }
+        
+        _db.SaveChanges();
     }
 
     public async Task BatchTestAsync()
     {
-        var proxies = Proxies.ToList();
-        StatusMessage = $"正在测试 {proxies.Count} 个代理...";
-
-        foreach (var proxy in proxies)
+        IsLoading = true;
+        foreach (var proxy in Proxies)
         {
             await TestSingleProxyAsync(proxy);
             await Task.Delay(100);
         }
-
+        IsLoading = false;
         StatusMessage = "批量测试完成";
     }
 
-    public async Task BatchImportAsync(string text)
+    public async Task BatchImportAsync(string content)
     {
-        try
+        var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        int count = 0;
+        
+        foreach (var line in lines)
         {
-            var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            var count = 0;
-
-            foreach (var line in lines)
+            var parts = line.Trim().Split(':');
+            if (parts.Length >= 2 && int.TryParse(parts[1], out int port))
             {
-                var parts = line.Split(':');
-                if (parts.Length >= 2)
-                {
-                    var proxy = new ProxyConfig
-                    {
-                        Name = $"导入代理_{count + 1}",
-                        Host = parts[0],
-                        Port = int.TryParse(parts[1], out var port) ? port : 0,
-                        Type = "HTTP"
-                    };
-
-                    _db.Proxies.Add(proxy);
-                    count++;
-                }
+                var proxy = new ProxyConfig { Name = parts[0], Host = parts[0], Port = port };
+                _db.Proxies.Add(proxy);
+                Proxies.Add(proxy);
+                count++;
             }
-
-            await _db.SaveChangesAsync();
-            await LoadProxiesAsync();
-            StatusMessage = $"成功导入 {count} 个代理";
         }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "批量导入代理失败");
-            StatusMessage = "导入失败";
-        }
+        
+        _db.SaveChanges();
+        StatusMessage = $"导入成功: {count} 个代理";
     }
 }

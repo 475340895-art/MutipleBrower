@@ -1,103 +1,121 @@
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using FingerprintBrowser.Models;
+using FingerprintBrowser.Services;
 using FingerprintBrowser.ViewModels;
 
-namespace FingerprintBrowser.Views
+namespace FingerprintBrowser.Views;
+
+public partial class ProxyWindow : HandyControl.Controls.Window
 {
-    public partial class ProxyWindow : HandyControl.Controls.Window
+    private readonly ProxyViewModel _viewModel;
+
+    public ProxyWindow()
     {
-        private readonly ProxyViewModel _viewModel;
+        InitializeComponent();
+        _viewModel = new ProxyViewModel();
+        DataContext = _viewModel;
+        Loaded += ProxyWindow_Loaded;
+    }
 
-        public ProxyWindow()
+    private async void ProxyWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        await _viewModel.LoadProxiesAsync();
+    }
+
+    private async void AddProxy_Click(object sender, RoutedEventArgs e)
+    {
+        var popup = new AddProxyDialog();
+        popup.Owner = this;
+        if (popup.ShowDialog() == true)
         {
-            InitializeComponent();
-            _viewModel = new ProxyViewModel();
-            DataContext = _viewModel;
-            Loaded += OnLoaded;
+            await _viewModel.AddProxyAsync(new ProxyConfig
+            {
+                Host = popup.Host,
+                Port = popup.Port,
+                Type = popup.ProxyType,
+                Username = popup.Username,
+                Password = popup.Password
+            });
         }
+    }
 
-        private async void OnLoaded(object sender, RoutedEventArgs e)
+    private async void TestProxy_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is ProxyConfig proxy)
         {
-            await _viewModel.LoadProxiesAsync();
+            await _viewModel.TestSingleProxyAsync(proxy);
         }
+    }
 
-        private async void AddButton_Click(object sender, RoutedEventArgs e)
+    private async void BatchTest_Click(object sender, RoutedEventArgs e)
+    {
+        await _viewModel.BatchTestAsync();
+    }
+
+    private async void DeleteProxy_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is ProxyConfig proxy)
         {
-            var name = NameTextBox?.Text ?? string.Empty;
-            var host = HostTextBox?.Text ?? string.Empty;
-            var portText = PortTextBox?.Text ?? "0";
-
-            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(host))
-            {
-                HandyControl.Controls.MessageBox.Show("请填写名称和主机地址", "提示");
-                return;
-            }
-
-            if (!int.TryParse(portText, out var port))
-            {
-                HandyControl.Controls.MessageBox.Show("端口必须是数字", "提示");
-                return;
-            }
-
-            var proxy = new Models.ProxyConfig
-            {
-                Name = name,
-                Host = host,
-                Port = port,
-                Type = TypeComboBox?.SelectedItem?.ToString() ?? "HTTP"
-            };
-
-            await _viewModel.AddProxyAsync(proxy);
+            await _viewModel.DeleteProxyAsync(proxy);
         }
+    }
 
-        private async void DeleteButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel.SelectedProxy == null)
-            {
-                HandyControl.Controls.MessageBox.Show("请选择要删除的代理", "提示");
-                return;
-            }
+    private async void BatchImport_Click(object sender, RoutedEventArgs e)
+    {
+        await _viewModel.BatchImportAsync();
+    }
+}
 
-            var result = HandyControl.Controls.MessageBox.Show(
-                $"确定删除代理 \"{_viewModel.SelectedProxy.Name}\" 吗?",
-                "确认删除",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+public class AddProxyDialog : HandyControl.Controls.Window
+{
+    public string Host { get; set; } = "";
+    public int Port { get; set; } = 80;
+    public string ProxyType { get; set; } = "HTTP";
+    public string Username { get; set; } = "";
+    public string Password { get; set; } = "";
 
-            if (result == MessageBoxResult.Yes)
-            {
-                await _viewModel.DeleteProxyAsync(_viewModel.SelectedProxy.Id);
-            }
-        }
+    public AddProxyDialog()
+    {
+        Title = "添加代理";
+        Width = 400;
+        Height = 350;
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        var panel = new StackPanel { Margin = new Thickness(20) };
 
-        private async void TestButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel.SelectedProxy == null)
-            {
-                HandyControl.Controls.MessageBox.Show("请选择要测试的代理", "提示");
-                return;
-            }
+        panel.Children.Add(new Label { Content = "代理地址:" });
+        var hostBox = new System.Windows.Controls.TextBox();
+        hostBox.TextChanged += (s, e) => Host = hostBox.Text;
+        panel.Children.Add(hostBox);
 
-            await _viewModel.TestSingleProxyAsync(_viewModel.SelectedProxy);
-        }
+        panel.Children.Add(new Label { Content = "端口:" });
+        var portBox = new System.Windows.Controls.TextBox();
+        portBox.TextChanged += (s, e) => int.TryParse(portBox.Text, out var p) && (Port = p) > 0;
+        panel.Children.Add(portBox);
 
-        private async void BatchTestButton_Click(object sender, RoutedEventArgs e)
-        {
-            await _viewModel.BatchTestAsync();
-        }
+        panel.Children.Add(new Label { Content = "类型:" });
+        var typeBox = new System.Windows.Controls.ComboBox();
+        typeBox.Items.Add("HTTP"); typeBox.Items.Add("HTTPS"); typeBox.Items.Add("SOCKS5");
+        typeBox.SelectedIndex = 0;
+        typeBox.SelectionChanged += (s, e) => ProxyType = (typeBox.SelectedItem as string) ?? "HTTP";
+        panel.Children.Add(typeBox);
 
-        private void ImportButton_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Filter = "文本文件|*.txt|所有文件|*.*",
-                Title = "导入代理"
-            };
+        panel.Children.Add(new Label { Content = "用户名 (可选):" });
+        var userBox = new System.Windows.Controls.TextBox();
+        userBox.TextChanged += (s, e) => Username = userBox.Text;
+        panel.Children.Add(userBox);
 
-            if (dialog.ShowDialog() == true)
-            {
-                var text = System.IO.File.ReadAllText(dialog.FileName);
-                _ = _viewModel.BatchImportAsync(text);
-            }
-        }
+        panel.Children.Add(new Label { Content = "密码 (可选):" });
+        var passBox = new System.Windows.Controls.PasswordBox();
+        passBox.PasswordChanged += (s, e) => Password = passBox.Password;
+        panel.Children.Add(passBox);
+
+        var btnPanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 20, 0, 0) };
+        btnPanel.Children.Add(new System.Windows.Controls.Button { Content = "取消", Margin = new Thickness(0, 0, 10, 0), Width = 80, Click = (s, e) => DialogResult = false });
+        btnPanel.Children.Add(new System.Windows.Controls.Button { Content = "确定", Width = 80, IsDefault = true, Click = (s, e) => DialogResult = true });
+        panel.Children.Add(btnPanel);
+
+        Content = panel;
     }
 }

@@ -1,250 +1,91 @@
 <hc:Window x:Class="FingerprintBrowser.Views.EnvironmentEditWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        mc:Ignorable="d"
-        Title="环境配置"
-        Height="700" Width="900"
-        MinHeight="600" MinWidth="800"
+        Title="环境编辑" Height="650" Width="500"
         WindowStartupLocation="CenterOwner"
-        Background="#0f0f1a"
-        NonClientAreaBackground="#12121f"
-        NonClientAreaForeground="White"
-        ResizeMode="CanResize">
+        Background="{DynamicResource RegionBrush}">
 
-    <Window.Resources>
-        <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#00d4ff" Offset="0"/>
-            <GradientStop Color="#7c3aed" Offset="1"/>
-        </LinearGradientBrush>
-        
-        <Style x:Key="SectionTitle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Margin" Value="0,0,0,12"/>
-        </Style>
-        
-        <Style x:Key="FieldLabel" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="#8888aa"/>
-            <Setter Property="Margin" Value="0,0,0,6"/>
-        </Style>
-        
-        <Style x:Key="TechTextBox" TargetType="TextBox">
-            <Setter Property="Background" Value="#1a1a2e"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#3d3d5c"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="12,10"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="CaretBrush" Value="White"/>
-            <Setter Property="Margin" Value="0,0,0,16"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6">
-                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="#667eea"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        
-        <Style x:Key="TechComboBox" TargetType="ComboBox">
-            <Setter Property="Background" Value="#1a1a2e"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#3d3d5c"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="12,10"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Margin" Value="0,0,0,16"/>
-        </Style>
-        
-        <Style x:Key="ActionButton" TargetType="Button">
-            <Setter Property="Background" Value="#2d2d44"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="24,12"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" Background="{TemplateBinding Background}"
-                                CornerRadius="6" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#3d3d5c"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#4d4d6c"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        
-        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource ActionButton}">
-            <Setter Property="Background" Value="{StaticResource AccentGradient}"/>
-        </Style>
-    </Window.Resources>
-
-    <Grid>
+    <Grid Margin="20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        
-        <!-- 标题栏 -->
-        <Border Grid.Row="0" Background="#12121f" Padding="20,16">
-            <TextBlock x:Name="TitleText" Text="新建环境" FontSize="18" FontWeight="Bold" Foreground="White"/>
-        </Border>
-        
-        <!-- 主内容 -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="24">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="24"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Basic Info -->
+                <TextBlock Text="基本信息" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
                 
-                <!-- 左侧配置 -->
-                <StackPanel Grid.Column="0">
-                    <!-- 基本信息 -->
-                    <TextBlock Style="{StaticResource SectionTitle}" Text="基本信息"/>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="环境名称 *"/>
-                    <TextBox x:Name="NameTextBox" Style="{StaticResource TechTextBox}" 
-                             hc:InfoElement.Placeholder="输入环境名称"/>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="分组"/>
-                    <ComboBox x:Name="GroupComboBox" Style="{StaticResource TechComboBox}"
-                              DisplayMemberPath="Name"/>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="备注"/>
-                    <TextBox x:Name="RemarkTextBox" Style="{StaticResource TechTextBox}" Height="80"
-                             TextWrapping="Wrap" AcceptsReturn="True"
-                             hc:InfoElement.Placeholder="输入备注信息"/>
-                    
-                    <!-- 浏览器配置 -->
-                    <TextBlock Style="{StaticResource SectionTitle}" Text="浏览器配置" Margin="0,24,0,12"/>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="启动页面"/>
-                    <TextBox x:Name="StartupUrlTextBox" Style="{StaticResource TechTextBox}"
-                             hc:InfoElement.Placeholder="https://example.com"/>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="浏览器内核"/>
-                    <ComboBox x:Name="BrowserTypeComboBox" Style="{StaticResource TechComboBox}">
-                        <ComboBoxItem Content="Chromium" IsSelected="True"/>
-                        <ComboBoxItem Content="Firefox"/>
-                        <ComboBoxItem Content="WebKit"/>
-                    </ComboBox>
-                </StackPanel>
-                
-                <!-- 右侧指纹配置 -->
-                <StackPanel Grid.Column="2">
-                    <!-- 指纹配置 -->
-                    <TextBlock Style="{StaticResource SectionTitle}" Text="指纹配置"/>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="分辨率"/>
-                    <ComboBox x:Name="ResolutionComboBox" Style="{StaticResource TechComboBox}">
-                        <ComboBoxItem Content="1920 x 1080" IsSelected="True"/>
-                        <ComboBoxItem Content="1366 x 768"/>
-                        <ComboBoxItem Content="1536 x 864"/>
-                        <ComboBoxItem Content="2560 x 1440"/>
-                        <ComboBoxItem Content="1440 x 900"/>
-                        <ComboBoxItem Content="1280 x 720"/>
-                        <ComboBoxItem Content="1680 x 1050"/>
-                    </ComboBox>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="时区"/>
-                    <ComboBox x:Name="TimezoneComboBox" Style="{StaticResource TechComboBox}">
-                        <ComboBoxItem Content="Asia/Shanghai (UTC+8)" IsSelected="True"/>
-                        <ComboBoxItem Content="Asia/Tokyo (UTC+9)"/>
-                        <ComboBoxItem Content="America/New_York (UTC-5)"/>
-                        <ComboBoxItem Content="Europe/London (UTC+0)"/>
-                        <ComboBoxItem Content="Asia/Singapore (UTC+8)"/>
-                        <ComboBoxItem Content="Asia/Hong_Kong (UTC+8)"/>
-                    </ComboBox>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="语言"/>
-                    <ComboBox x:Name="LanguageComboBox" Style="{StaticResource TechComboBox}">
-                        <ComboBoxItem Content="zh-CN,zh;q=0.9,en;q=0.8" IsSelected="True"/>
-                        <ComboBoxItem Content="en-US,en;q=0.9"/>
-                        <ComboBoxItem Content="ja-JP,ja;q=0.9,en;q=0.8"/>
-                        <ComboBoxItem Content="zh-TW,zh;q=0.9,en;q=0.8"/>
-                    </ComboBox>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="User Agent"/>
-                    <TextBox x:Name="UserAgentTextBox" Style="{StaticResource TechTextBox}"
-                             hc:InfoElement.Placeholder="留空则自动生成"/>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="WebGL 渲染器"/>
-                    <ComboBox x:Name="WebGLComboBox" Style="{StaticResource TechComboBox}">
-                        <ComboBoxItem Content="自动随机" IsSelected="True"/>
-                        <ComboBoxItem Content="NVIDIA"/>
-                        <ComboBoxItem Content="AMD"/>
-                        <ComboBoxItem Content="Intel"/>
-                    </ComboBox>
-                    
-                    <!-- 代理配置 -->
-                    <TextBlock Style="{StaticResource SectionTitle}" Text="代理配置" Margin="0,24,0,12"/>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="代理类型"/>
-                    <ComboBox x:Name="ProxyTypeComboBox" Style="{StaticResource TechComboBox}">
-                        <ComboBoxItem Content="不使用代理" IsSelected="True"/>
-                        <ComboBoxItem Content="HTTP"/>
-                        <ComboBoxItem Content="HTTPS"/>
-                        <ComboBoxItem Content="SOCKS5"/>
-                    </ComboBox>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="代理地址"/>
-                    <TextBox x:Name="ProxyHostTextBox" Style="{StaticResource TechTextBox}"
-                             hc:InfoElement.Placeholder="127.0.0.1"/>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="代理端口"/>
-                    <TextBox x:Name="ProxyPortTextBox" Style="{StaticResource TechTextBox}"
-                             hc:InfoElement.Placeholder="7890"/>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="代理用户名（可选）"/>
-                    <TextBox x:Name="ProxyUsernameTextBox" Style="{StaticResource TechTextBox}"
-                             hc:InfoElement.Placeholder="用户名"/>
-                    
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="代理密码（可选）"/>
-                    <PasswordBox x:Name="ProxyPasswordBox" Background="#1a1a2e" Foreground="White"
-                                 BorderBrush="#3d3d5c" BorderThickness="1" Padding="12,10"
-                                 Margin="0,0,0,16"/>
-                    
-                    <Button x:Name="TestProxyButton" Content="测试代理" Style="{StaticResource ActionButton}"
-                            Click="TestProxy_Click"/>
-                </StackPanel>
-            </Grid>
-        </ScrollViewer>
-        
-        <!-- 底部按钮 -->
-        <Border Grid.Row="2" Background="#12121f" Padding="24,16">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="取消" Style="{StaticResource ActionButton}" 
-                        Click="Cancel_Click" Margin="0,0,12,0"/>
-                <Button Content="保存" Style="{StaticResource PrimaryButton}" 
-                        Click="Save_Click"/>
+                <TextBlock Text="名称"/>
+                <System.Windows.Controls.TextBox x:Name="NameTextBox" Text="{Binding Name}" Margin="0,0,0,10"/>
+
+                <TextBlock Text="分组"/>
+                <hc:ComboBox ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup}" 
+                            DisplayMemberPath="Name" Margin="0,0,0,10"/>
+
+                <TextBlock Text="备注"/>
+                <System.Windows.Controls.TextBox Text="{Binding Remark}" Height="60" TextWrapping="Wrap" 
+                                                AcceptsReturn="True" Margin="0,0,0,15"/>
+
+                <!-- Browser Settings -->
+                <TextBlock Text="浏览器设置" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                <TextBlock Text="分辨率"/>
+                <hc:ComboBox SelectedItem="{Binding Resolution}" Margin="0,0,0,10">
+                    <ComboBoxItem Content="1920x1080"/>
+                    <ComboBoxItem Content="1366x768"/>
+                    <ComboBoxItem Content="1536x864"/>
+                    <ComboBoxItem Content="1440x900"/>
+                    <ComboBoxItem Content="2560x1440"/>
+                </hc:ComboBox>
+
+                <TextBlock Text="时区"/>
+                <System.Windows.Controls.TextBox Text="{Binding Timezone}" Margin="0,0,0,10"/>
+
+                <TextBlock Text="语言"/>
+                <System.Windows.Controls.TextBox Text="{Binding Languages}" Margin="0,0,0,10"/>
+
+                <TextBlock Text="UserAgent"/>
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <System.Windows.Controls.TextBox Text="{Binding UserAgent}"/>
+                    <Button Grid.Column="1" Content="生成" Click="GenerateUserAgent_Click" Margin="10,0,0,0"/>
+                </Grid>
+
+                <CheckBox Content="WebGL 指纹随机" IsChecked="{Binding RandomizeWebGL}" Margin="0,0,0,10"/>
+
+                <!-- Proxy Settings -->
+                <TextBlock Text="代理设置" FontSize="14" FontWeight="Bold" Margin="0,10,0,10"/>
+
+                <TextBlock Text="代理类型"/>
+                <hc:ComboBox SelectedItem="{Binding ProxyType}" Margin="0,0,0,10">
+                    <ComboBoxItem Content="不使用代理"/>
+                    <ComboBoxItem Content="HTTP"/>
+                    <ComboBoxItem Content="HTTPS"/>
+                    <ComboBoxItem Content="SOCKS5"/>
+                </hc:ComboBox>
+
+                <TextBlock Text="代理地址"/>
+                <System.Windows.Controls.TextBox Text="{Binding ProxyHost}" Margin="0,0,0,10"/>
+
+                <TextBlock Text="端口"/>
+                <System.Windows.Controls.TextBox Text="{Binding ProxyPort}" Margin="0,0,0,10"/>
+
+                <TextBlock Text="用户名"/>
+                <System.Windows.Controls.TextBox Text="{Binding ProxyUsername}" Margin="0,0,0,10"/>
+
+                <TextBlock Text="密码"/>
+                <System.Windows.Controls.PasswordBox Margin="0,0,0,10"/>
             </StackPanel>
-        </Border>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="取消" Width="100" Click="Cancel_Click" Margin="0,0,10,0"/>
+            <Button Content="保存" Width="100" Style="{StaticResource ButtonPrimary}" Click="Save_Click"/>
+        </StackPanel>
     </Grid>
 </hc:Window>
