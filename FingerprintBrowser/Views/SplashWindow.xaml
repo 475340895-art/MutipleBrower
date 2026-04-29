@@ -39,9 +39,9 @@
                 <TextBlock Text="专业级指纹浏览器" FontSize="14"
                            Foreground="#9999AA" HorizontalAlignment="Center" Margin="0,0,0,30"/>
                 
-                <!-- 加载进度条 -->
-                <hc:LoadingCircle x:Name="LoadingCircle" Width="40" Height="40" 
-                                  DotCount="8" DotDiameter="6" DotBrush="#667EEA"/>
+                <!-- 加载动画 - 使用标准 ProgressBar -->
+                <ProgressBar x:Name="LoadingBar" IsIndeterminate="True" Width="200" Height="4"
+                             Foreground="#667EEA" Background="#333355"/>
                 
                 <!-- 状态文本 -->
                 <TextBlock x:Name="StatusText" Text="正在启动..." FontSize="12"

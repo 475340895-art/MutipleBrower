@@ -1,79 +1,76 @@
-using Microsoft.Playwright;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using FingerprintBrowser.Models;
 
 namespace FingerprintBrowser.Services;
 
 public class BrowserService
 {
-    private readonly Dictionary<int, IBrowserContext> _runningContexts = new();
+    private static BrowserService? _instance;
+    public static BrowserService Instance => _instance ??= new BrowserService();
+
+    private readonly ConcurrentDictionary<int, IBrowser> _runningBrowsers = new();
     private readonly PlaywrightService _playwrightService;
-    private readonly SemaphoreSlim _semaphore = new(5);
-    
+    private readonly SemaphoreSlim _semaphore;
+
     public BrowserService()
     {
-        _playwrightService = new PlaywrightService();
+        _playwrightService = PlaywrightService.Instance;
+        _semaphore = new SemaphoreSlim(AppConstants.MaxConcurrency);
     }
-    
-    public async Task StartBrowserAsync(BrowserEnvironment env)
+
+    public async Task<BrowserLaunchResult> LaunchBrowserAsync(BrowserEnvironment environment)
     {
-        if (_runningContexts.ContainsKey(env.Id))
-        {
-            var context = _runningContexts[env.Id];
-            var pages = context.Pages;
-            if (pages.Count > 0) await pages[0].BringToFrontAsync();
-            return;
-        }
-        
-        await _semaphore.WaitAsync();
         try
         {
-            var context = await _playwrightService.CreateContextAsync(env);
-            _runningContexts[env.Id] = context;
-            
-            if (!string.IsNullOrEmpty(env.StartupUrl))
+            await _semaphore.WaitAsync();
+            var result = await _playwrightService.LaunchBrowserAsync(environment);
+            if (result.Success && result.Browser != null)
             {
-                var page = await context.NewPageAsync();
-                await page.GotoAsync(env.StartupUrl);
+                _runningBrowsers[environment.Id] = result.Browser;
             }
-            
-            env.Status = BrowserStatus.Running;
-            env.RunningBrowserId = env.Id;
+            return result;
         }
-        finally
+        catch (Exception ex)
         {
-            _semaphore.Release();
+            return new BrowserLaunchResult { Success = false, ErrorMessage = ex.Message };
         }
     }
-    
-    public async Task StopBrowserAsync(int environmentId)
+
+    public async Task CloseBrowserAsync(int environmentId)
     {
-        if (_runningContexts.TryGetValue(environmentId, out var context))
+        if (_runningBrowsers.TryRemove(environmentId, out var browser))
         {
-            await context.CloseAsync();
-            _runningContexts.Remove(environmentId);
-        }
-    }
-    
-    public async Task OpenUrlAsync(int environmentId, string url)
-    {
-        if (_runningContexts.TryGetValue(environmentId, out var context))
-        {
-            var pages = context.Pages;
-            if (pages.Count > 0)
+            try
             {
-                await pages[0].BringToFrontAsync();
-                await pages[0].GotoAsync(url);
+                await browser.CloseAsync();
             }
+            catch { }
         }
+        _semaphore.Release();
     }
-    
-    public async Task CleanupAsync()
+
+    public bool IsRunning(int environmentId) => _runningBrowsers.ContainsKey(environmentId);
+
+    public async Task CloseAllAsync()
     {
-        foreach (var context in _runningContexts.Values)
+        foreach (var kvp in _runningBrowsers)
         {
-            await context.CloseAsync();
+            try
+            {
+                await kvp.Value.CloseAsync();
+            }
+            catch { }
         }
-        _runningContexts.Clear();
-        _playwrightService.Dispose();
+        _runningBrowsers.Clear();
     }
+
+    public int RunningCount => _runningBrowsers.Count;
+}
+
+public class BrowserLaunchResult
+{
+    public bool Success { get; set; }
+    public IBrowser? Browser { get; set; }
+    public string? ErrorMessage { get; set; }
 }
