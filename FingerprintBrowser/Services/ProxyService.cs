@@ -89,7 +89,7 @@ public class ProxyService : IProxyService
             context.Proxies.Add(proxy);
             await context.SaveChangesAsync();
 
-            Log.Information("添加代理成功: {Name} ({Host}:{Port})", proxy.Name, proxy.Host, proxy.Port);
+            Log.Information("添加代理成功: {Name} ({Address})", proxy.Name, proxy.ProxyAddress);
             return proxy;
         }
         catch (Exception ex)

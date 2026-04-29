@@ -211,21 +211,6 @@ public class BrowserService
         });
     }
 
-    public Task DeleteEnvironmentAsync(int environmentId)
-    {
-        return Task.Run(async () =>
-        {
-            await StopBrowserAsync(environmentId);
-            using var context = new BrowserDbContext();
-            var env = context.Environments.Find(environmentId);
-            if (env != null)
-            {
-                context.Environments.Remove(env);
-                context.SaveChanges();
-            }
-        });
-    }
-
     public Task<BrowserEnvironment> CopyEnvironmentAsync(int id)
     {
         return Task.Run(async () =>
@@ -239,14 +224,6 @@ public class BrowserService
             var clone = original.Clone();
             clone.Id = 0;
             return await CreateEnvironmentAsync(clone);
-        });
-    }
-
-    public Task CopyEnvironmentAsync(int environmentId)
-    {
-        return Task.Run(async () =>
-        {
-            await CopyEnvironmentAsync(environmentId);
         });
     }
 

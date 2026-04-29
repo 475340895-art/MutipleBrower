@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using FingerprintBrowser.Models;
+using FingerprintBrowser.Services;
 
 namespace FingerprintBrowser.ViewModels
 {
@@ -25,7 +26,7 @@ namespace FingerprintBrowser.ViewModels
         {
             return Task.Run(async () =>
             {
-                var proxies = await _proxyService.GetAllAsync();
+                var proxies = await _proxyService.GetAllProxiesAsync();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     Proxies = new ObservableCollection<ProxyConfig>(proxies);

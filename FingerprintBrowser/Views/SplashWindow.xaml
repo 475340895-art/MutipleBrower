@@ -1,4 +1,4 @@
-<Window x:Class="FingerprintBrowser.Views.SplashWindow"
+<hc:Window x:Class="FingerprintBrowser.Views.SplashWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:hc="https://handyorg.github.io/handycontrol"
@@ -71,7 +71,7 @@
                                   HorizontalAlignment="Center" Margin="0,0,0,20"/>
 
                 <!-- 状态文字 -->
-                <TextBlock x:Name="StatusText" Text="正在初始化..." FontSize="13" 
+                <TextBlock x:Name="LoadingText" Text="正在初始化..." FontSize="13" 
                            Foreground="#8888aa" HorizontalAlignment="Center" Margin="0,0,0,40"/>
 
                 <!-- 进度条 -->
@@ -98,4 +98,4 @@
                        Margin="0,0,20,15"/>
         </Grid>
     </Border>
-</Window>
+</hc:Window>
