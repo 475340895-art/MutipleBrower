@@ -1,6 +1,8 @@
 using System.Windows;
 using System.Windows.Threading;
 using Serilog;
+using Application = System.Windows.Application;
+using MessageBox = System.Windows.MessageBox;
 
 namespace FingerprintBrowser;
 

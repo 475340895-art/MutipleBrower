@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
 using FingerprintBrowser.Models;
+using Color = System.Windows.Media.Color;
 
 namespace FingerprintBrowser.Converters;
 
@@ -149,7 +150,7 @@ public class HexToBrushConverter : IValueConverter
         {
             try
             {
-                var color = (Color)ColorConverter.ConvertFromString(hex);
+                var color = (Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
                 return new SolidColorBrush(color);
             }
             catch

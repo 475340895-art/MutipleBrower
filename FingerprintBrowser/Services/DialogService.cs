@@ -1,6 +1,7 @@
 using System.Windows;
 using HandyControl.Controls;
 using Serilog;
+using Application = System.Windows.Application;
 
 namespace FingerprintBrowser.Services;
 

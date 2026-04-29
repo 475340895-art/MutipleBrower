@@ -3,6 +3,8 @@ using FingerprintBrowser.Data;
 using FingerprintBrowser.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Application = System.Windows.Application;
+using MessageBox = System.Windows.MessageBox;
 
 namespace FingerprintBrowser;
 

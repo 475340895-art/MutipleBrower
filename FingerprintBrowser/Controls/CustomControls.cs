@@ -64,9 +64,9 @@ public class StatusIndicator : Ellipse
     {
         Fill = Status switch
         {
-            BrowserStatus.Running => new SolidColorBrush(Color.FromRgb(52, 211, 153)),
-            BrowserStatus.Error => new SolidColorBrush(Color.FromRgb(248, 113, 113)),
-            _ => new SolidColorBrush(Color.FromRgb(107, 114, 128))
+            BrowserStatus.Running => new SolidColorBrush(System.Windows.Media.Color.FromRgb(52, 211, 153)),
+            BrowserStatus.Error => new SolidColorBrush(System.Windows.Media.Color.FromRgb(248, 113, 113)),
+            _ => new SolidColorBrush(System.Windows.Media.Color.FromRgb(107, 114, 128))
         };
 
         Width = 8;
@@ -101,12 +101,12 @@ public class GroupColorIndicator : Border
     {
         try
         {
-            var color = (Color)ColorConverter.ConvertFromString(Color);
+            var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(Color);
             Background = new SolidColorBrush(color);
         }
         catch
         {
-            Background = new SolidColorBrush(Color.FromRgb(59, 130, 246));
+            Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(59, 130, 246));
         }
 
         Width = 4;
