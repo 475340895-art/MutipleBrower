@@ -77,6 +77,132 @@ public class BrowserStatusToTextConverter : IValueConverter
 }
 
 /// <summary>
+/// 布尔值转可见性（兼容别名）
+/// </summary>
+public class BoolToVisConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        bool boolValue = value is bool b && b;
+        bool inverse = parameter?.ToString() == "Inverse";
+        
+        if (inverse)
+            return boolValue ? Visibility.Collapsed : Visibility.Visible;
+        return boolValue ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// 浏览器状态转颜色（兼容别名）
+/// </summary>
+public class StatusColorConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value switch
+        {
+            (int)BrowserStatus.Running => new SolidColorBrush(Color.FromRgb(52, 211, 153)),
+            (int)BrowserStatus.Error => new SolidColorBrush(Color.FromRgb(248, 113, 113)),
+            _ => new SolidColorBrush(Color.FromRgb(107, 114, 128))
+        };
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// 浏览器状态转文字（兼容别名）
+/// </summary>
+public class StatusTextConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value switch
+        {
+            (int)BrowserStatus.Running => "运行中",
+            (int)BrowserStatus.Error => "异常",
+            _ => "未启动"
+        };
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// 代理状态转颜色（兼容别名）
+/// </summary>
+public class ProxyStatusColorConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value switch
+        {
+            (int)ProxyStatus.Testing => new SolidColorBrush(Color.FromRgb(251, 191, 36)),
+            (int)ProxyStatus.Unavailable => new SolidColorBrush(Color.FromRgb(248, 113, 113)),
+            _ => new SolidColorBrush(Color.FromRgb(52, 211, 153))
+        };
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// 代理状态转文字（兼容别名）
+/// </summary>
+public class ProxyStatusTextConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value switch
+        {
+            (int)ProxyStatus.Testing => "测试中",
+            (int)ProxyStatus.Unavailable => "不可用",
+            _ => "正常"
+        };
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// 日期时间转换器（兼容别名）
+/// </summary>
+public class DateTimeConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is DateTime dt)
+        {
+            var format = parameter as string ?? "yyyy-MM-dd HH:mm:ss";
+            return dt.ToString(format);
+        }
+        return "-";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
 /// 浏览器状态转颜色
 /// </summary>
 public class BrowserStatusToColorConverter : IValueConverter

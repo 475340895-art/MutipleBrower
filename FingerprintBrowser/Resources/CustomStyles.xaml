@@ -17,6 +17,43 @@
     <SolidColorBrush x:Key="DarkBgBrush" Color="{StaticResource DarkBgColor}"/>
     <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource CardBgColor}"/>
 
+    <!-- 垂直分隔符样式 -->
+    <Style x:Key="VerticalSeparatorStyle" TargetType="Separator">
+        <Setter Property="Width" Value="1"/>
+        <Setter Property="Height" Value="20"/>
+        <Setter Property="Background" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Separator">
+                    <Rectangle Width="1" Height="{TemplateBinding Height}" Fill="{TemplateBinding Background}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 窗口图标按钮样式 -->
+    <Style x:Key="ButtonIcon" TargetType="Button">
+        <Setter Property="Width" Value="36"/>
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- 状态指示器样式 -->
     <Style x:Key="StatusIndicator" TargetType="Ellipse">
         <Setter Property="Width" Value="8"/>
@@ -93,6 +130,12 @@
         <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- 搜索框扩展样式 -->
+    <Style x:Key="SearchBarExtend" TargetType="hc:SearchBar">
+        <Setter Property="Width" Value="200"/>
+        <Setter Property="Margin" Value="8,0"/>
     </Style>
 
     <!-- TabControl 样式覆盖 -->
