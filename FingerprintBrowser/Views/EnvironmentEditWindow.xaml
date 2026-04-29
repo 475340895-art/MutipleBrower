@@ -1,0 +1,223 @@
+<hc:Window x:Class="FingerprintBrowser.Views.EnvironmentEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:vm="clr-namespace:FingerprintBrowser.ViewModels"
+        xmlns:converters="clr-namespace:FingerprintBrowser.Converters"
+        mc:Ignorable="d"
+        Title="编辑环境"
+        Height="700" Width="900"
+        MinHeight="600" MinWidth="800"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource RegionBrush}">
+
+    <Window.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 顶部基本信息 -->
+        <Border Grid.Row="0" Style="{StaticResource InfoCardStyle}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,16,12">
+                    <TextBlock Text="环境名称" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                    <hc:TextBox Text="{Binding Environment.Name, UpdateSourceTrigger=PropertyChanged}"
+                                hc:InfoElement.Placeholder="请输入环境名称"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,12">
+                    <TextBlock Text="所属分组" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                    <ComboBox ItemsSource="{Binding Groups}"
+                              SelectedValue="{Binding Environment.GroupId}"
+                              SelectedValuePath="Id"
+                              DisplayMemberPath="Name"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,16,12">
+                    <TextBlock Text="启动URL" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                    <hc:TextBox Text="{Binding Environment.StartupUrl, UpdateSourceTrigger=PropertyChanged}"
+                                hc:InfoElement.Placeholder="https://example.com"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,12">
+                    <TextBlock Text="备注" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                    <hc:TextBox Text="{Binding Environment.Remarks, UpdateSourceTrigger=PropertyChanged}"
+                                hc:InfoElement.Placeholder="备注信息"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2" Grid.Column="0">
+                    <CheckBox Content="启用代理" IsChecked="{Binding Environment.UseProxy}" Margin="0,0,0,8"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2" Grid.Column="1">
+                    <TextBlock Text="选择代理" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                    <ComboBox ItemsSource="{Binding Proxies}"
+                              SelectedValue="{Binding Environment.ProxyId}"
+                              SelectedValuePath="Id"
+                              DisplayMemberPath="Name"
+                              IsEnabled="{Binding Environment.UseProxy}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- TabControl - 指纹配置 -->
+        <TabControl Grid.Row="1" Margin="0,12">
+            <!-- 基本指纹 -->
+            <TabItem Header="基本指纹">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,16,12">
+                                <TextBlock Text="屏幕宽度" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                                <hc:NumericUpDown Value="{Binding Environment.ScreenWidth}" Minimum="800" Maximum="3840"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,12">
+                                <TextBlock Text="屏幕高度" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                                <hc:NumericUpDown Value="{Binding Environment.ScreenHeight}" Minimum="600" Maximum="2160"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,16,12">
+                                <TextBlock Text="时区偏移 (UTC)" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                                <hc:NumericUpDown Value="{Binding Environment.TimeZone}" Minimum="-12" Maximum="12"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,12">
+                                <TextBlock Text="语言" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                                <ComboBox SelectedValue="{Binding Environment.Language}" SelectedValuePath="Tag">
+                                    <ComboBoxItem Content="简体中文 (zh-CN)" Tag="zh-CN"/>
+                                    <ComboBoxItem Content="English (en-US)" Tag="en-US"/>
+                                    <ComboBoxItem Content="日本語 (ja-JP)" Tag="ja-JP"/>
+                                    <ComboBoxItem Content="한국어 (ko-KR)" Tag="ko-KR"/>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,16,12">
+                                <TextBlock Text="平台" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                                <ComboBox SelectedValue="{Binding Environment.Platform}" SelectedValuePath="Tag">
+                                    <ComboBoxItem Content="Windows" Tag="Win32"/>
+                                    <ComboBoxItem Content="macOS" Tag="MacIntel"/>
+                                    <ComboBoxItem Content="Linux" Tag="Linux x86_64"/>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,0,0,12">
+                                <TextBlock Text="CPU核心数" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                                <hc:TextBox Text="{Binding Environment.HardwareConcurrency}" hc:InfoElement.Placeholder="4, 6, 8, 12, 16"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,0,16,12">
+                                <TextBlock Text="设备内存 (GB)" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                                <hc:TextBox Text="{Binding Environment.DeviceMemory}" hc:InfoElement.Placeholder="4, 8, 16, 32"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- User Agent -->
+                        <TextBlock Text="User Agent" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                        <hc:TextBox Text="{Binding Environment.UserAgent, UpdateSourceTrigger=PropertyChanged}"
+                                    Height="60"
+                                    AcceptsReturn="True"
+                                    TextWrapping="Wrap"
+                                    VerticalScrollBarVisibility="Auto"
+                                    Margin="0,0,0,16"/>
+
+                        <!-- 随机生成按钮 -->
+                        <Button Content="随机生成指纹" Style="{StaticResource ButtonInfo}"
+                                Command="{Binding GenerateRandomFingerprintCommand}"
+                                HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- 高级指纹 -->
+            <TabItem Header="高级指纹">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
+                    <StackPanel>
+                        <TextBlock Text="WebGL 配置" Style="{StaticResource GroupHeaderStyle}"/>
+                        <Border Style="{StaticResource InfoCardStyle}">
+                            <StackPanel>
+                                <StackPanel Margin="0,0,0,12">
+                                    <TextBlock Text="WebGL 厂商" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                                    <hc:TextBox Text="{Binding Environment.WebGlVendor}" 
+                                                hc:InfoElement.Placeholder="Intel Inc., NVIDIA Corporation, AMD"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="WebGL 渲染器" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,4"/>
+                                    <hc:TextBox Text="{Binding Environment.WebGlRenderer}"
+                                                hc:InfoElement.Placeholder="Intel Iris OpenGL Engine"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="Canvas 指纹" Style="{StaticResource GroupHeaderStyle}" Margin="0,12,0,0"/>
+                        <Border Style="{StaticResource InfoCardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Canvas 指纹将通过算法自动生成" 
+                                           Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Cookie管理 -->
+            <TabItem Header="Cookie管理">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
+                    <StackPanel>
+                        <TextBlock Text="Cookie 导入/导出" Style="{StaticResource GroupHeaderStyle}"/>
+                        <Border Style="{StaticResource InfoCardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="在此粘贴 Cookie JSON 数据:" Style="{StaticResource InfoLabelStyle}" Margin="0,0,0,8"/>
+                                <hc:TextBox Text="{Binding Environment.Cookies, UpdateSourceTrigger=PropertyChanged}"
+                                            Height="200"
+                                            AcceptsReturn="True"
+                                            TextWrapping="Wrap"
+                                            VerticalScrollBarVisibility="Auto"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <!-- 底部按钮 -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="重置指纹" Style="{StaticResource FunctionButtonStyle}" 
+                    Command="{Binding ResetFingerprintCommand}" Margin="0,0,8,0"/>
+            <Button Content="保存" Style="{StaticResource PrimaryActionButton}" 
+                    Command="{Binding SaveCommand}" Margin="0,0,8,0"
+                    Click="SaveButton_Click"/>
+            <Button Content="取消" Style="{StaticResource FunctionButtonStyle}" 
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</hc:Window>
