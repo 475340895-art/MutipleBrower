@@ -1,9 +1,9 @@
 using System.IO;
+using System.Linq;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FingerprintBrowser.Services;
-using HandyControl.Themes;
 using Serilog;
 
 namespace FingerprintBrowser.ViewModels;
@@ -127,15 +127,26 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            var skin = value switch
+            var app = System.Windows.Application.Current;
+            var resources = app.Resources.MergedDictionaries;
+
+            // 移除现有主题
+            var existingTheme = resources.FirstOrDefault(r => 
+                r.Source?.OriginalString.Contains("HandyControl.DataVisualization") == true ||
+                r.Source?.OriginalString.Contains("HandyControl.Themes.") == true);
+            if (existingTheme != null)
+                resources.Remove(existingTheme);
+
+            // 添加新主题
+            var themeUri = value switch
             {
-                "深色" => HandyControl.Themes.SkinType.Dark,
-                "浅色" => HandyControl.Themes.SkinType.Light,
-                "深蓝" => HandyControl.Themes.SkinType.DarkBlue,
-                _ => HandyControl.Themes.SkinType.Dark
+                "浅色" => new Uri("pack://application:,,,/HandyControl.Themes;component/Themes/SkinDefault.xaml"),
+                "深蓝" => new Uri("pack://application:,,,/HandyControl.Themes;component/Themes/SkinDarkBlue.xaml"),
+                _ => new Uri("pack://application:,,,/HandyControl.Themes;component/Themes/SkinDark.xaml")
             };
 
-            HandyControl.Themes.ThemeManager.Current.ApplicationTheme = skin;
+            resources.Add(new ResourceDictionary { Source = themeUri });
+            Log.Information("主题已切换为: {Theme}", value);
         }
         catch (Exception ex)
         {
