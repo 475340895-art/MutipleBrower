@@ -5,858 +5,679 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FingerprintBrowser - 指纹浏览器</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: #e8ecf1;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#e8ecf1;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.app{width:1360px;height:860px;background:#fff;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;position:relative}
 
-  .app-window {
-    width: 1280px;
-    height: 800px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    position: relative;
-  }
+/* Title Bar */
+.title-bar{height:36px;background:#1e3a5f;display:flex;align-items:center;padding:0 12px;flex-shrink:0}
+.traffic-lights{display:flex;gap:8px}
+.traffic-lights span{width:12px;height:12px;border-radius:50%}
+.tl-close{background:#ff5f57}.tl-min{background:#ffbd2e}.tl-max{background:#28c840}
+.title-text{flex:1;text-align:center;color:#a8c4de;font-size:12px;letter-spacing:.5px}
+.title-icons{display:flex;gap:14px;color:#7fa3c4;font-size:14px;cursor:pointer}
+.title-icons span:hover{color:#fff}
 
-  /* === Title Bar === */
-  .title-bar {
-    height: 36px;
-    background: #1e3a5f;
-    display: flex;
-    align-items: center;
-    padding: 0 12px;
-    flex-shrink: 0;
-  }
-  .title-bar .traffic-lights {
-    display: flex;
-    gap: 8px;
-  }
-  .traffic-lights span {
-    width: 12px; height: 12px; border-radius: 50%;
-  }
-  .traffic-lights .close { background: #ff5f57; }
-  .traffic-lights .minimize { background: #ffbd2e; }
-  .traffic-lights .maximize { background: #28c840; }
-  .title-bar .title-text {
-    flex: 1;
-    text-align: center;
-    color: #a8c4de;
-    font-size: 12px;
-    letter-spacing: 0.5px;
-  }
-  .title-bar .title-icons {
-    display: flex;
-    gap: 12px;
-    color: #7fa3c4;
-    font-size: 13px;
-  }
+/* Main Layout */
+.main{display:flex;flex:1;overflow:hidden}
 
-  /* === Main Layout === */
-  .main-layout {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
+/* Sidebar */
+.sidebar{width:224px;background:#f7f8fa;border-right:1px solid #e8eaed;display:flex;flex-direction:column;flex-shrink:0}
+.sb-head{padding:14px 14px 10px}
+.btn-new{width:100%;height:38px;background:#1677ff;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
+.btn-new:hover{background:#4096ff;transform:translateY(-1px);box-shadow:0 4px 12px rgba(22,119,255,.3)}
+.btn-new .ic{width:16px;height:16px;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px}
+.sb-acts{padding:6px 14px 10px;display:flex;gap:8px}
+.sb-acts button{flex:1;height:30px;border:1px solid #d9d9d9;background:#fff;border-radius:6px;font-size:11px;color:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;transition:.15s}
+.sb-acts button:hover{border-color:#1677ff;color:#1677ff}
+.sb-acts .play-i{width:0;height:0;border-left:6px solid currentColor;border-top:4px solid transparent;border-bottom:4px solid transparent}
+.sb-acts .stop-i{width:7px;height:7px;background:currentColor;border-radius:1px}
+.sb-sep{height:1px;background:#e8eaed;margin:4px 14px}
+.sb-title{padding:10px 14px 4px;font-size:11px;color:#999;letter-spacing:1px;display:flex;align-items:center;justify-content:space-between}
+.sb-title .add-i{color:#1677ff;cursor:pointer;font-size:15px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:.15s}
+.sb-title .add-i:hover{background:#e6f0ff}
+.grp-list{flex:1;overflow-y:auto;padding:0 8px 8px}
+.grp-item{height:34px;display:flex;align-items:center;padding:0 10px;border-radius:6px;cursor:pointer;font-size:13px;color:#333;gap:8px;transition:.12s;position:relative}
+.grp-item:hover{background:#eef3ff}
+.grp-item.active{background:#e6f0ff;color:#1677ff;font-weight:500}
+.grp-item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.grp-item .cnt{margin-left:auto;background:#e8eaed;color:#666;font-size:10px;padding:1px 7px;border-radius:10px}
+.grp-item.active .cnt{background:#d6e4ff;color:#1677ff}
+.grp-item .del-grp{display:none;position:absolute;right:8px;width:18px;height:18px;border:none;background:transparent;color:#999;cursor:pointer;border-radius:3px;font-size:12px;align-items:center;justify-content:center}
+.grp-item:hover .del-grp{display:flex}
+.grp-item:hover .cnt{display:none}
+.grp-item .del-grp:hover{color:#ff4d4f;background:#fff1f0}
 
-  /* === Left Sidebar === */
-  .sidebar {
-    width: 220px;
-    background: #f7f8fa;
-    border-right: 1px solid #e8eaed;
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-  }
-  .sidebar-header {
-    padding: 16px;
-    border-bottom: 1px solid #eee;
-  }
-  .btn-new-env {
-    width: 100%;
-    height: 38px;
-    background: #1677ff;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-  .btn-new-env:hover { background: #4096ff; }
-  .btn-new-env .icon-plus {
-    width: 16px; height: 16px;
-    border: 2px solid #fff;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    line-height: 1;
-  }
-  .sidebar-actions {
-    padding: 12px 16px;
-    display: flex;
-    gap: 8px;
-    border-bottom: 1px solid #eee;
-  }
-  .sidebar-actions button {
-    flex: 1;
-    height: 32px;
-    border: 1px solid #d9d9d9;
-    background: #fff;
-    border-radius: 6px;
-    font-size: 12px;
-    color: #555;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-  }
-  .sidebar-actions button:hover { border-color: #1677ff; color: #1677ff; }
-  .sidebar-actions button .play-icon {
-    width: 0; height: 0;
-    border-left: 6px solid currentColor;
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
-  }
-  .sidebar-actions button .stop-icon {
-    width: 8px; height: 8px;
-    background: currentColor;
-    border-radius: 1px;
-  }
+/* Content */
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden}
 
-  .sidebar-section-title {
-    padding: 12px 16px 6px;
-    font-size: 11px;
-    color: #999;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .sidebar-section-title .add-icon {
-    color: #1677ff;
-    cursor: pointer;
-    font-size: 14px;
-  }
+/* Tabs */
+.tabs{height:40px;background:#fafbfc;border-bottom:1px solid #e8eaed;display:flex;padding:0 16px;gap:0;flex-shrink:0}
+.tab{height:40px;padding:0 18px;border:none;background:transparent;font-size:13px;color:#666;cursor:pointer;position:relative;display:flex;align-items:center;gap:6px;transition:.15s}
+.tab:hover{color:#1677ff}
+.tab.active{color:#1677ff;font-weight:500}
+.tab.active::after{content:'';position:absolute;bottom:0;left:14px;right:14px;height:2px;background:#1677ff;border-radius:1px}
+.tab .badge{background:#ff4d4f;color:#fff;font-size:10px;padding:1px 5px;border-radius:8px;min-width:16px;text-align:center}
 
-  .group-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0 8px;
-  }
-  .group-item {
-    height: 36px;
-    display: flex;
-    align-items: center;
-    padding: 0 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
-    color: #333;
-    gap: 8px;
-    transition: background 0.15s;
-  }
-  .group-item:hover { background: #eef3ff; }
-  .group-item.active { background: #e6f0ff; color: #1677ff; font-weight: 500; }
-  .group-item .dot {
-    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-  }
-  .group-item .count {
-    margin-left: auto;
-    background: #e8eaed;
-    color: #666;
-    font-size: 11px;
-    padding: 1px 8px;
-    border-radius: 10px;
-  }
-  .group-item.active .count { background: #d6e4ff; color: #1677ff; }
+/* Tab Panels */
+.tab-panel{display:none;flex:1;flex-direction:column;overflow:hidden}
+.tab-panel.active{display:flex}
 
-  /* === Right Content === */
-  .content-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+/* Toolbar */
+.toolbar{height:48px;border-bottom:1px solid #e8eaed;display:flex;align-items:center;padding:0 16px;gap:6px;flex-shrink:0}
+.tb-btn{height:30px;padding:0 12px;border:1px solid #d9d9d9;background:#fff;border-radius:6px;font-size:12px;color:#555;cursor:pointer;display:flex;align-items:center;gap:4px;transition:.15s;white-space:nowrap}
+.tb-btn:hover{border-color:#1677ff;color:#1677ff}
+.tb-btn.primary{background:#1677ff;color:#fff;border-color:#1677ff}
+.tb-btn.primary:hover{background:#4096ff}
+.tb-btn.danger{color:#ff4d4f;border-color:#ffccc7}
+.tb-btn.danger:hover{background:#fff1f0;border-color:#ff4d4f}
+.tb-btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.tb-btn svg{width:13px;height:13px}
+.tb-sep{width:1px;height:18px;background:#e8eaed;margin:0 2px}
+.tb-spacer{flex:1}
+.search-box{height:30px;width:200px;border:1px solid #d9d9d9;border-radius:6px;padding:0 10px 0 30px;font-size:12px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23999'%3E%3Cpath d='M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E") no-repeat 8px center/14px;outline:none;transition:.15s}
+.search-box:focus{border-color:#1677ff;box-shadow:0 0 0 2px rgba(22,119,255,.1)}
+.view-tog{display:flex;border:1px solid #d9d9d9;border-radius:6px;overflow:hidden}
+.view-tog button{width:30px;height:28px;border:none;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px;transition:.12s}
+.view-tog button.active{background:#e6f0ff;color:#1677ff}
+.view-tog button:not(:last-child){border-right:1px solid #e8eaed}
 
-  /* === Toolbar === */
-  .toolbar {
-    height: 50px;
-    border-bottom: 1px solid #e8eaed;
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
-    gap: 8px;
-  }
-  .toolbar-btn {
-    height: 32px;
-    padding: 0 14px;
-    border: 1px solid #d9d9d9;
-    background: #fff;
-    border-radius: 6px;
-    font-size: 12px;
-    color: #555;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    transition: all 0.15s;
-  }
-  .toolbar-btn:hover { border-color: #1677ff; color: #1677ff; }
-  .toolbar-btn.primary { background: #1677ff; color: #fff; border-color: #1677ff; }
-  .toolbar-btn.primary:hover { background: #4096ff; }
-  .toolbar-btn svg { width: 14px; height: 14px; }
-  .toolbar-sep { width: 1px; height: 20px; background: #e8eaed; margin: 0 4px; }
-  .toolbar-spacer { flex: 1; }
-  .search-box {
-    height: 32px;
-    width: 220px;
-    border: 1px solid #d9d9d9;
-    border-radius: 6px;
-    padding: 0 10px 0 32px;
-    font-size: 12px;
-    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23999'%3E%3Cpath d='M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E") no-repeat 8px center/16px;
-    outline: none;
-  }
-  .search-box:focus { border-color: #1677ff; }
+/* Table */
+.tbl-wrap{flex:1;overflow-y:auto}
+table{width:100%;border-collapse:collapse}
+thead th{height:38px;background:#fafbfc;border-bottom:1px solid #e8eaed;font-size:12px;font-weight:500;color:#888;text-align:left;padding:0 12px;white-space:nowrap;position:sticky;top:0;z-index:1}
+thead th.sortable{cursor:pointer;user-select:none}
+thead th.sortable:hover{color:#1677ff}
+tbody tr{height:50px;border-bottom:1px solid #f0f0f0;transition:.08s}
+tbody tr:hover{background:#f7f9ff}
+tbody tr.selected{background:#e6f0ff}
+tbody td{padding:0 12px;font-size:13px;color:#333;white-space:nowrap}
+.ck-cell{width:40px;text-align:center}
+.ck-cell input{accent-color:#1677ff;cursor:pointer}
+.num-cell{width:46px;color:#999;font-size:12px}
+.name-cell{display:flex;align-items:center;gap:10px}
+.avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600;flex-shrink:0;letter-spacing:.3px}
+.name-txt{font-weight:500;font-size:13px}
+.name-sub{font-size:11px;color:#999;margin-top:1px}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500}
+.pill.run{background:#e6f9ee;color:#1db954}
+.pill.stop{background:#f0f0f0;color:#999}
+.pill .sd{width:6px;height:6px;border-radius:50%}
+.pill.run .sd{background:#1db954;animation:pulse 2s infinite}
+.pill.stop .sd{background:#bbb}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.os-i{width:18px;height:18px;background:#0078d4;border-radius:2px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700}
+.proxy-t{color:#666;font-size:12px;font-family:"SF Mono",Consolas,monospace}
+.proxy-t.none{color:#c0c0c0;font-family:inherit}
+.act-btns{display:flex;gap:2px}
+.act-btn{width:28px;height:28px;border:none;background:transparent;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px;transition:.12s}
+.act-btn:hover{background:#e6f0ff;color:#1677ff}
+.act-btn.dg:hover{background:#fff1f0;color:#ff4d4f}
+.act-btn.running-btn{color:#1db954}
 
-  /* === Data Table === */
-  .table-container {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  thead th {
-    height: 40px;
-    background: #fafbfc;
-    border-bottom: 1px solid #e8eaed;
-    font-size: 12px;
-    font-weight: 500;
-    color: #888;
-    text-align: left;
-    padding: 0 12px;
-    white-space: nowrap;
-    position: sticky;
-    top: 0;
-  }
-  tbody tr {
-    height: 52px;
-    border-bottom: 1px solid #f0f0f0;
-    transition: background 0.1s;
-  }
-  tbody tr:hover { background: #f7f9ff; }
-  tbody td {
-    padding: 0 12px;
-    font-size: 13px;
-    color: #333;
-    white-space: nowrap;
-  }
-  .cell-checkbox { width: 40px; text-align: center; }
-  .cell-checkbox input { accent-color: #1677ff; }
-  .cell-num { width: 50px; color: #999; font-size: 12px; }
-  .cell-name {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .avatar {
-    width: 30px; height: 30px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; font-size: 12px; font-weight: 600; flex-shrink: 0;
-  }
-  .name-text { font-weight: 500; }
-  .name-group { font-size: 11px; color: #999; }
+/* Grid View */
+.grid-wrap{flex:1;overflow-y:auto;padding:16px;display:none}
+.grid-wrap.active{display:flex;flex-wrap:wrap;gap:12px;align-content:flex-start}
+.env-card{width:220px;background:#fff;border:1px solid #e8eaed;border-radius:8px;padding:14px;cursor:pointer;transition:.15s;position:relative}
+.env-card:hover{border-color:#1677ff;box-shadow:0 2px 8px rgba(22,119,255,.1)}
+.env-card.selected{border-color:#1677ff;background:#f7f9ff}
+.env-card .card-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.env-card .card-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600}
+.env-card .card-name{font-size:13px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.env-card .card-status{position:absolute;top:10px;right:10px}
+.env-card .card-info{font-size:11px;color:#999;line-height:1.8}
+.env-card .card-actions{display:flex;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f0}
+.env-card .card-actions button{flex:1;height:26px;border:1px solid #e8eaed;background:#fff;border-radius:4px;font-size:11px;cursor:pointer;transition:.12s;display:flex;align-items:center;justify-content:center;gap:3px}
+.env-card .card-actions button:hover{border-color:#1677ff;color:#1677ff}
 
-  .status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 2px 10px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
-  }
-  .status-pill.running { background: #e6f9ee; color: #1db954; }
-  .status-pill.stopped { background: #f0f0f0; color: #999; }
-  .status-pill .dot {
-    width: 6px; height: 6px; border-radius: 50%;
-  }
-  .status-pill.running .dot { background: #1db954; }
-  .status-pill.stopped .dot { background: #bbb; }
+/* Status Bar */
+.status-bar{height:28px;background:#fafbfc;border-top:1px solid #e8eaed;display:flex;align-items:center;padding:0 16px;font-size:11px;color:#999;gap:14px;flex-shrink:0}
+.status-bar .sd{width:6px;height:6px;border-radius:50%;background:#1db954}
 
-  .os-icon {
-    width: 18px; height: 18px;
-    background: #0078d4;
-    border-radius: 2px;
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; font-size: 10px; font-weight: 700;
-  }
+/* Proxy Tab */
+.proxy-panel{padding:16px;flex:1;overflow-y:auto}
+.proxy-stats{display:flex;gap:12px;margin-bottom:16px}
+.stat-card{flex:1;background:#f7f8fa;border-radius:8px;padding:14px 16px}
+.stat-card .stat-label{font-size:11px;color:#999;margin-bottom:4px}
+.stat-card .stat-val{font-size:22px;font-weight:600;color:#1a1a1a}
+.stat-card .stat-val span{font-size:12px;font-weight:400;color:#999;margin-left:2px}
+.proxy-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e8eaed;border-radius:8px;overflow:hidden}
+.proxy-table th{height:38px;background:#fafbfc;font-size:12px;color:#888;text-align:left;padding:0 12px;border-bottom:1px solid #e8eaed}
+.proxy-table td{height:44px;padding:0 12px;font-size:13px;border-bottom:1px solid #f5f5f5}
+.proxy-table tr:hover td{background:#f7f9ff}
+.pt-status{display:inline-flex;align-items:center;gap:4px;font-size:12px}
+.pt-status.ok{color:#1db954}.pt-status.fail{color:#ff4d4f}.pt-status.untest{color:#999}
 
-  .proxy-text { color: #666; font-size: 12px; font-family: "SF Mono", "Consolas", monospace; }
-  .proxy-text.no-proxy { color: #bbb; font-family: inherit; }
+/* Settings Tab */
+.settings-panel{padding:24px;flex:1;overflow-y:auto}
+.set-section{margin-bottom:24px}
+.set-section h4{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #f0f0f0}
+.set-row{display:flex;align-items:center;margin-bottom:14px;gap:16px}
+.set-label{width:120px;font-size:13px;color:#666;text-align:right;flex-shrink:0}
+.set-ctrl{flex:1;max-width:360px}
+.set-ctrl input,.set-ctrl select{width:100%;height:34px;border:1px solid #d9d9d9;border-radius:6px;padding:0 10px;font-size:13px;outline:none}
+.set-ctrl input:focus,.set-ctrl select:focus{border-color:#1677ff;box-shadow:0 0 0 2px rgba(22,119,255,.1)}
+.toggle{position:relative;width:40px;height:22px;background:#d9d9d9;border-radius:11px;cursor:pointer;transition:.2s;flex-shrink:0}
+.toggle.on{background:#1677ff}
+.toggle::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.toggle.on::after{left:20px}
 
-  .action-btns { display: flex; gap: 4px; }
-  .action-btn {
-    width: 28px; height: 28px;
-    border: none; background: transparent;
-    border-radius: 4px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    color: #999; font-size: 14px;
-    transition: all 0.15s;
-  }
-  .action-btn:hover { background: #e6f0ff; color: #1677ff; }
-  .action-btn.danger:hover { background: #fff1f0; color: #ff4d4f; }
+/* Dialogs */
+.dlg-overlay{position:absolute;inset:0;background:rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;z-index:100;animation:fadeIn .15s}
+.dlg-overlay.show{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.dlg{background:#fff;border-radius:10px;box-shadow:0 12px 48px rgba(0,0,0,.18);animation:dlgIn .2s ease;max-height:90%;display:flex;flex-direction:column}
+@keyframes dlgIn{from{opacity:0;transform:scale(.95) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.dlg-sm{width:420px}.dlg-md{width:520px}.dlg-lg{width:600px}
+.dlg-head{height:48px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e8eaed;flex-shrink:0}
+.dlg-head h3{font-size:14px;font-weight:600;color:#1a1a1a}
+.dlg-close{width:24px;height:24px;border:none;background:transparent;color:#999;font-size:18px;cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center}
+.dlg-close:hover{background:#f0f0f0;color:#333}
+.dlg-body{padding:20px;overflow-y:auto;flex:1}
+.f-row{display:flex;align-items:center;margin-bottom:14px;gap:12px}
+.f-label{width:90px;font-size:12px;color:#666;text-align:right;flex-shrink:0}
+.f-ctrl{flex:1;height:34px;border:1px solid #d9d9d9;border-radius:6px;padding:0 10px;font-size:12px;outline:none;transition:.15s}
+.f-ctrl:focus{border-color:#1677ff;box-shadow:0 0 0 2px rgba(22,119,255,.1)}
+.f-ctrl.ro{background:#f7f8fa;color:#888;font-family:"SF Mono",Consolas,monospace;font-size:11px}
+select.f-ctrl{appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23999'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") no-repeat right 8px center/14px;cursor:pointer}
+.f-ctrl-full{flex:1}
+.dlg-foot{padding:12px 20px;border-top:1px solid #e8eaed;display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
+.btn-cancel{height:32px;padding:0 16px;border:1px solid #d9d9d9;background:#fff;border-radius:6px;font-size:12px;color:#555;cursor:pointer;transition:.15s}
+.btn-cancel:hover{border-color:#1677ff;color:#1677ff}
+.btn-primary{height:32px;padding:0 20px;background:#1677ff;border:none;border-radius:6px;font-size:12px;color:#fff;cursor:pointer;font-weight:500;transition:.15s}
+.btn-primary:hover{background:#4096ff}
+.btn-success{height:32px;padding:0 16px;background:#1db954;border:none;border-radius:6px;font-size:12px;color:#fff;cursor:pointer;transition:.15s}
+.btn-success:hover{background:#2ecc71}
 
-  /* === Status Bar === */
-  .status-bar {
-    height: 30px;
-    background: #fafbfc;
-    border-top: 1px solid #e8eaed;
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
-    font-size: 11px;
-    color: #999;
-    gap: 16px;
-  }
-  .status-bar .status-dot {
-    width: 6px; height: 6px; border-radius: 50%; background: #1db954;
-  }
+/* Toast */
+.toast-container{position:absolute;top:48px;right:16px;z-index:200;display:flex;flex-direction:column;gap:8px}
+.toast{padding:10px 16px;border-radius:8px;font-size:13px;color:#fff;animation:toastIn .3s ease,toastOut .3s ease 2.7s;animation-fill-mode:forwards;display:flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.toast.success{background:#1db954}.toast.error{background:#ff4d4f}.toast.info{background:#1677ff}
+@keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{from{opacity:1}to{opacity:0}}
 
-  /* === Dialog Overlay === */
-  .dialog-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.25);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-  }
+/* Empty State */
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ccc}
+.empty-state .empty-icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:14px}
 
-  /* === Dialog: Fingerprint Config === */
-  .dialog {
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 12px 48px rgba(0,0,0,0.15);
-    overflow: hidden;
-    animation: dialogIn 0.2s ease;
-  }
-  @keyframes dialogIn {
-    from { opacity: 0; transform: scale(0.95) translateY(8px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
-  }
-  .dialog-fp { width: 480px; }
-  .dialog-proxy { width: 420px; margin-right: 530px; margin-top: -80px; }
-
-  .dialog-header {
-    height: 48px;
-    padding: 0 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid #e8eaed;
-  }
-  .dialog-header h3 {
-    font-size: 14px;
-    font-weight: 600;
-    color: #1a1a1a;
-  }
-  .dialog-close {
-    width: 24px; height: 24px;
-    border: none; background: transparent;
-    color: #999; font-size: 16px;
-    cursor: pointer; border-radius: 4px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .dialog-close:hover { background: #f0f0f0; color: #333; }
-
-  .dialog-body {
-    padding: 20px;
-    max-height: 480px;
-    overflow-y: auto;
-  }
-  .form-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 14px;
-    gap: 12px;
-  }
-  .form-label {
-    width: 100px;
-    font-size: 12px;
-    color: #666;
-    text-align: right;
-    flex-shrink: 0;
-  }
-  .form-control {
-    flex: 1;
-    height: 32px;
-    border: 1px solid #d9d9d9;
-    border-radius: 6px;
-    padding: 0 10px;
-    font-size: 12px;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .form-control:focus { border-color: #1677ff; }
-  .form-control.readonly {
-    background: #f7f8fa;
-    color: #888;
-    font-family: "SF Mono", "Consolas", monospace;
-    font-size: 11px;
-  }
-  select.form-control {
-    appearance: none;
-    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23999'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") no-repeat right 8px center/14px;
-    cursor: pointer;
-  }
-  .toggle-switch {
-    position: relative;
-    width: 36px;
-    height: 20px;
-    background: #d9d9d9;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  .toggle-switch.on { background: #1677ff; }
-  .toggle-switch::after {
-    content: '';
-    position: absolute;
-    width: 16px; height: 16px;
-    border-radius: 50%;
-    background: #fff;
-    top: 2px; left: 2px;
-    transition: left 0.2s;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-  }
-  .toggle-switch.on::after { left: 18px; }
-
-  .dialog-footer {
-    padding: 12px 20px;
-    border-top: 1px solid #e8eaed;
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-  .btn-cancel {
-    height: 32px;
-    padding: 0 16px;
-    border: 1px solid #d9d9d9;
-    background: #fff;
-    border-radius: 6px;
-    font-size: 12px;
-    color: #555;
-    cursor: pointer;
-  }
-  .btn-cancel:hover { border-color: #1677ff; color: #1677ff; }
-  .btn-save {
-    height: 32px;
-    padding: 0 20px;
-    background: #1677ff;
-    border: none;
-    border-radius: 6px;
-    font-size: 12px;
-    color: #fff;
-    cursor: pointer;
-    font-weight: 500;
-  }
-  .btn-save:hover { background: #4096ff; }
-  .btn-test {
-    height: 32px;
-    padding: 0 16px;
-    background: #1677ff;
-    border: none;
-    border-radius: 6px;
-    font-size: 12px;
-    color: #fff;
-    cursor: pointer;
-  }
-
-  /* Dual dialogs layout */
-  .dialogs-container {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.25);
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-  }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#d0d0d0;border-radius:3px}::-webkit-scrollbar-thumb:hover{background:#aaa}
 </style>
 </head>
 <body>
-
-<div class="app-window">
+<div class="app">
   <!-- Title Bar -->
   <div class="title-bar">
-    <div class="traffic-lights">
-      <span class="close"></span>
-      <span class="minimize"></span>
-      <span class="maximize"></span>
-    </div>
+    <div class="traffic-lights"><span class="tl-close"></span><span class="tl-min"></span><span class="tl-max"></span></div>
     <div class="title-text">FingerprintBrowser - 指纹浏览器管理系统</div>
-    <div class="title-icons">
-      <span>&#9881;</span>
-    </div>
+    <div class="title-icons"><span title="通知">&#128276;</span><span title="设置">&#9881;</span></div>
   </div>
 
-  <!-- Main Layout -->
-  <div class="main-layout">
+  <div class="main">
     <!-- Sidebar -->
     <div class="sidebar">
-      <div class="sidebar-header">
-        <button class="btn-new-env">
-          <span class="icon-plus">+</span>
-          新建环境
-        </button>
+      <div class="sb-head"><button class="btn-new" onclick="openDlg('dlgNewEnv')"><span class="ic">+</span> 新建环境</button></div>
+      <div class="sb-acts">
+        <button onclick="batchStart()"><span class="play-i"></span> 启动全部</button>
+        <button onclick="batchStop()"><span class="stop-i"></span> 停止全部</button>
       </div>
-      <div class="sidebar-actions">
-        <button><span class="play-icon"></span> 启动全部</button>
-        <button><span class="stop-icon"></span> 停止全部</button>
-      </div>
-      <div class="sidebar-section-title">
-        分组列表
-        <span class="add-icon">+</span>
-      </div>
-      <div class="group-list">
-        <div class="group-item active">
-          <span class="dot" style="background:#1677ff"></span>
-          全部环境
-          <span class="count">12</span>
-        </div>
-        <div class="group-item">
-          <span class="dot" style="background:#f5222d"></span>
-          社交媒体
-          <span class="count">5</span>
-        </div>
-        <div class="group-item">
-          <span class="dot" style="background:#fa8c16"></span>
-          电商运营
-          <span class="count">3</span>
-        </div>
-        <div class="group-item">
-          <span class="dot" style="background:#52c41a"></span>
-          广告验证
-          <span class="count">2</span>
-        </div>
-        <div class="group-item">
-          <span class="dot" style="background:#722ed1"></span>
-          开发测试
-          <span class="count">1</span>
-        </div>
-        <div class="group-item">
-          <span class="dot" style="background:#13c2c2"></span>
-          数据采集
-          <span class="count">1</span>
-        </div>
-      </div>
+      <div class="sb-sep"></div>
+      <div class="sb-title">分组列表 <span class="add-i" onclick="openDlg('dlgNewGrp')">+</span></div>
+      <div class="grp-list" id="groupList"></div>
     </div>
 
     <!-- Content Area -->
-    <div class="content-area">
-      <!-- Toolbar -->
-      <div class="toolbar">
-        <button class="toolbar-btn primary">
-          <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
-          启动
-        </button>
-        <button class="toolbar-btn">
-          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
-          停止
-        </button>
-        <div class="toolbar-sep"></div>
-        <button class="toolbar-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4v7m0-7l7 7"/></svg>
-          编辑
-        </button>
-        <button class="toolbar-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2v2"/></svg>
-          删除
-        </button>
-        <button class="toolbar-btn">
-          批量操作 &#9662;
-        </button>
-        <div class="toolbar-spacer"></div>
-        <input type="text" class="search-box" placeholder="搜索环境名称...">
+    <div class="content">
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="env" onclick="switchTab('env')">&#127760; 环境管理 <span class="badge" id="envBadge">12</span></button>
+        <button class="tab" data-tab="proxy" onclick="switchTab('proxy')">&#128274; 代理管理</button>
+        <button class="tab" data-tab="settings" onclick="switchTab('settings')">&#9881; 系统设置</button>
       </div>
 
-      <!-- Data Table -->
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th class="cell-checkbox"><input type="checkbox"></th>
-              <th class="cell-num">#</th>
-              <th style="width:200px">环境名称</th>
-              <th style="width:90px">状态</th>
-              <th style="width:60px">系统</th>
-              <th style="width:200px">代理信息</th>
-              <th style="width:140px">最后打开</th>
-              <th style="width:120px">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="cell-checkbox"><input type="checkbox" checked></td>
-              <td class="cell-num">1</td>
-              <td><div class="cell-name"><div class="avatar" style="background:#1677ff">FB</div><div><div class="name-text">FB-营销账号-01</div><div class="name-group">社交媒体</div></div></div></td>
-              <td><span class="status-pill running"><span class="dot"></span>运行中</span></td>
-              <td><div class="os-icon">W</div></td>
-              <td><span class="proxy-text">SOCKS5 10.0.0.1:1080</span></td>
-              <td style="font-size:12px;color:#888">2024-01-15 14:30</td>
-              <td><div class="action-btns"><button class="action-btn" title="打开浏览器">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
-            </tr>
-            <tr>
-              <td class="cell-checkbox"><input type="checkbox"></td>
-              <td class="cell-num">2</td>
-              <td><div class="cell-name"><div class="avatar" style="background:#52c41a">TW</div><div><div class="name-text">TW-运营号-02</div><div class="name-group">社交媒体</div></div></div></td>
-              <td><span class="status-pill running"><span class="dot"></span>运行中</span></td>
-              <td><div class="os-icon">W</div></td>
-              <td><span class="proxy-text">HTTP 192.168.1.5:8080</span></td>
-              <td style="font-size:12px;color:#888">2024-01-15 13:22</td>
-              <td><div class="action-btns"><button class="action-btn" title="打开浏览器">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
-            </tr>
-            <tr>
-              <td class="cell-checkbox"><input type="checkbox"></td>
-              <td class="cell-num">3</td>
-              <td><div class="cell-name"><div class="avatar" style="background:#fa8c16">AM</div><div><div class="name-text">AM-店铺主号</div><div class="name-group">电商运营</div></div></div></td>
-              <td><span class="status-pill stopped"><span class="dot"></span>已停止</span></td>
-              <td><div class="os-icon">W</div></td>
-              <td><span class="proxy-text">SOCKS5 172.16.0.3:7890</span></td>
-              <td style="font-size:12px;color:#888">2024-01-14 09:15</td>
-              <td><div class="action-btns"><button class="action-btn" title="启动">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
-            </tr>
-            <tr>
-              <td class="cell-checkbox"><input type="checkbox"></td>
-              <td class="cell-num">4</td>
-              <td><div class="cell-name"><div class="avatar" style="background:#f5222d">GG</div><div><div class="name-text">GG-广告投放-01</div><div class="name-group">广告验证</div></div></div></td>
-              <td><span class="status-pill stopped"><span class="dot"></span>已停止</span></td>
-              <td><div class="os-icon">W</div></td>
-              <td><span class="proxy-text">HTTP 10.10.10.1:3128</span></td>
-              <td style="font-size:12px;color:#888">2024-01-13 18:40</td>
-              <td><div class="action-btns"><button class="action-btn" title="启动">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
-            </tr>
-            <tr>
-              <td class="cell-checkbox"><input type="checkbox"></td>
-              <td class="cell-num">5</td>
-              <td><div class="cell-name"><div class="avatar" style="background:#722ed1">IG</div><div><div class="name-text">IG-网红合作-03</div><div class="name-group">社交媒体</div></div></div></td>
-              <td><span class="status-pill running"><span class="dot"></span>运行中</span></td>
-              <td><div class="os-icon">W</div></td>
-              <td><span class="proxy-text">SS 10.0.0.5:8388</span></td>
-              <td style="font-size:12px;color:#888">2024-01-15 15:01</td>
-              <td><div class="action-btns"><button class="action-btn" title="打开浏览器">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
-            </tr>
-            <tr>
-              <td class="cell-checkbox"><input type="checkbox"></td>
-              <td class="cell-num">6</td>
-              <td><div class="cell-name"><div class="avatar" style="background:#13c2c2">EB</div><div><div class="name-text">EB-客服号-01</div><div class="name-group">电商运营</div></div></div></td>
-              <td><span class="status-pill stopped"><span class="dot"></span>已停止</span></td>
-              <td><div class="os-icon">W</div></td>
-              <td><span class="proxy-text no-proxy">未配置代理</span></td>
-              <td style="font-size:12px;color:#888">2024-01-12 11:30</td>
-              <td><div class="action-btns"><button class="action-btn" title="启动">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
-            </tr>
-            <tr>
-              <td class="cell-checkbox"><input type="checkbox"></td>
-              <td class="cell-num">7</td>
-              <td><div class="cell-name"><div class="avatar" style="background:#eb2f96">TK</div><div><div class="name-text">TK-直播号-01</div><div class="name-group">社交媒体</div></div></div></td>
-              <td><span class="status-pill stopped"><span class="dot"></span>已停止</span></td>
-              <td><div class="os-icon">W</div></td>
-              <td><span class="proxy-text">SOCKS5 192.168.2.1:1080</span></td>
-              <td style="font-size:12px;color:#888">2024-01-11 20:55</td>
-              <td><div class="action-btns"><button class="action-btn" title="启动">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
-            </tr>
-            <tr>
-              <td class="cell-checkbox"><input type="checkbox"></td>
-              <td class="cell-num">8</td>
-              <td><div class="cell-name"><div class="avatar" style="background:#2f54eb">DEV</div><div><div class="name-text">DEV-自动化测试</div><div class="name-group">开发测试</div></div></div></td>
-              <td><span class="status-pill stopped"><span class="dot"></span>已停止</span></td>
-              <td><div class="os-icon">W</div></td>
-              <td><span class="proxy-text no-proxy">未配置代理</span></td>
-              <td style="font-size:12px;color:#888">2024-01-10 16:20</td>
-              <td><div class="action-btns"><button class="action-btn" title="启动">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Status Bar -->
-      <div class="status-bar">
-        <span class="status-dot"></span>
-        <span>服务正常运行</span>
-        <span>|</span>
-        <span>总计: <b style="color:#333">12</b></span>
-        <span>运行中: <b style="color:#1db954">3</b></span>
-        <span>已停止: <b style="color:#999">9</b></span>
-        <div style="flex:1"></div>
-        <span>并发上限: 5</span>
-        <span>|</span>
-        <span>Playwright: 已就绪</span>
-      </div>
-
-      <!-- Dialogs -->
-      <div class="dialogs-container">
-        <!-- Proxy Settings Dialog -->
-        <div class="dialog dialog-proxy">
-          <div class="dialog-header">
-            <h3>代理设置</h3>
-            <button class="dialog-close">&times;</button>
-          </div>
-          <div class="dialog-body">
-            <div class="form-row">
-              <label class="form-label">代理类型</label>
-              <select class="form-control">
-                <option>HTTP</option>
-                <option>HTTPS</option>
-                <option selected>SOCKS5</option>
-                <option>Shadowsocks</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label class="form-label">代理服务器</label>
-              <input type="text" class="form-control" value="10.0.0.1" placeholder="请输入代理服务器地址">
-            </div>
-            <div class="form-row">
-              <label class="form-label">代理端口</label>
-              <input type="text" class="form-control" value="1080" placeholder="端口号">
-            </div>
-            <div class="form-row">
-              <label class="form-label">用户名</label>
-              <input type="text" class="form-control" placeholder="选填">
-            </div>
-            <div class="form-row">
-              <label class="form-label">密码</label>
-              <input type="password" class="form-control" placeholder="选填">
-            </div>
-          </div>
-          <div class="dialog-footer">
-            <button class="btn-cancel">取消</button>
-            <button class="btn-test">测试连接</button>
-            <button class="btn-save">保存</button>
+      <!-- === Environments Tab === -->
+      <div class="tab-panel active" id="panelEnv">
+        <div class="toolbar">
+          <button class="tb-btn primary" onclick="startSelected()">&#9654; 启动</button>
+          <button class="tb-btn" onclick="stopSelected()">&#9632; 停止</button>
+          <div class="tb-sep"></div>
+          <button class="tb-btn" onclick="openDlg('dlgEditEnv')">&#9998; 编辑</button>
+          <button class="tb-btn danger" onclick="deleteSelected()">&#128465; 删除</button>
+          <button class="tb-btn" onclick="showToast('info','已刷新环境列表')">&#8635; 刷新</button>
+          <div class="tb-spacer"></div>
+          <input type="text" class="search-box" id="searchInput" placeholder="搜索环境名称..." oninput="filterEnvs()">
+          <div class="view-tog">
+            <button class="active" id="viewList" onclick="setView('list')">&#9776;</button>
+            <button id="viewGrid" onclick="setView('grid')">&#9638;</button>
           </div>
         </div>
+        <div class="tbl-wrap" id="tblWrap"><table id="envTable"><thead><tr>
+          <th class="ck-cell"><input type="checkbox" onchange="toggleAll(this)"></th>
+          <th class="num-cell">#</th>
+          <th style="width:200px">环境名称</th>
+          <th style="width:90px">状态</th>
+          <th style="width:50px">系统</th>
+          <th style="width:180px">代理信息</th>
+          <th style="width:140px">最后打开</th>
+          <th style="width:120px">操作</th>
+        </tr></thead><tbody id="envTbody"></tbody></table></div>
+        <div class="grid-wrap" id="gridWrap"></div>
+        <div class="status-bar"><span class="sd"></span><span>服务正常运行</span><span>|</span><span>总计: <b id="totalCount" style="color:#333">0</b></span><span>运行中: <b id="runCount" style="color:#1db954">0</b></span><span>已停止: <b id="stopCount" style="color:#999">0</b></span><div style="flex:1"></div><span>并发上限: 5</span><span>|</span><span>Playwright: 已就绪</span></div>
+      </div>
 
-        <!-- Fingerprint Config Dialog -->
-        <div class="dialog dialog-fp">
-          <div class="dialog-header">
-            <h3>指纹配置</h3>
-            <button class="dialog-close">&times;</button>
+      <!-- === Proxy Tab === -->
+      <div class="tab-panel" id="panelProxy">
+        <div class="toolbar">
+          <button class="tb-btn primary" onclick="openDlg('dlgNewProxy')">+ 添加代理</button>
+          <button class="tb-btn" onclick="showToast('info','批量测试中...')">&#128270; 批量测试</button>
+          <button class="tb-btn danger" onclick="showToast('info','已删除选中代理')">&#128465; 批量删除</button>
+          <button class="tb-btn" onclick="showToast('info','已从文件导入')">&#128229; 批量导入</button>
+          <div class="tb-spacer"></div>
+          <input type="text" class="search-box" placeholder="搜索代理地址...">
+        </div>
+        <div class="proxy-panel">
+          <div class="proxy-stats">
+            <div class="stat-card"><div class="stat-label">代理总数</div><div class="stat-val">8<span>个</span></div></div>
+            <div class="stat-card"><div class="stat-label">连接正常</div><div class="stat-val" style="color:#1db954">5<span>个</span></div></div>
+            <div class="stat-card"><div class="stat-label">连接失败</div><div class="stat-val" style="color:#ff4d4f">1<span>个</span></div></div>
+            <div class="stat-card"><div class="stat-label">未测试</div><div class="stat-val" style="color:#999">2<span>个</span></div></div>
           </div>
-          <div class="dialog-body">
-            <div class="form-row">
-              <label class="form-label">浏览器指纹</label>
-              <input type="text" class="form-control readonly" value="a3f8d2c1e9b7450682f1d4a3c7e5b902">
-            </div>
-            <div class="form-row">
-              <label class="form-label">User Agent</label>
-              <select class="form-control">
-                <option>Chrome 121 / Windows 10</option>
-                <option>Chrome 120 / Windows 11</option>
-                <option>Chrome 121 / macOS</option>
-                <option>Firefox 122 / Windows 10</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label class="form-label">屏幕分辨率</label>
-              <select class="form-control">
-                <option>1920 x 1080</option>
-                <option>1366 x 768</option>
-                <option>2560 x 1440</option>
-                <option>1536 x 864</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label class="form-label">WebGL 供应商</label>
-              <select class="form-control">
-                <option>Google Inc. (NVIDIA)</option>
-                <option>Google Inc. (Intel)</option>
-                <option>Google Inc. (AMD)</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label class="form-label">WebGL 渲染器</label>
-              <select class="form-control">
-                <option>ANGLE (NVIDIA, GeForce GTX 1060)</option>
-                <option>ANGLE (Intel, HD Graphics 630)</option>
-                <option>ANGLE (AMD, Radeon RX 580)</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label class="form-label">Canvas 噪声</label>
-              <select class="form-control">
-                <option>轻微噪声</option>
-                <option selected>中等噪声</option>
-                <option>强烈噪声</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label class="form-label">AudioContext</label>
-              <div class="toggle-switch on"></div>
-              <span style="font-size:12px;color:#1677ff;margin-left:4px">已开启</span>
-            </div>
-            <div class="form-row">
-              <label class="form-label">WebRTC</label>
-              <div class="toggle-switch"></div>
-              <span style="font-size:12px;color:#999;margin-left:4px">已关闭</span>
-            </div>
-            <div class="form-row">
-              <label class="form-label">语言</label>
-              <select class="form-control">
-                <option>zh-CN (简体中文)</option>
-                <option>en-US (英语)</option>
-                <option>ja-JP (日语)</option>
-                <option>ko-KR (韩语)</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label class="form-label">时区</label>
-              <select class="form-control">
-                <option>Asia/Shanghai (UTC+8)</option>
-                <option>America/New_York (UTC-5)</option>
-                <option>Europe/London (UTC+0)</option>
-                <option>Asia/Tokyo (UTC+9)</option>
-              </select>
-            </div>
-          </div>
-          <div class="dialog-footer">
-            <button class="btn-cancel">取消</button>
-            <button class="btn-save">保存配置</button>
-          </div>
+          <table class="proxy-table">
+            <thead><tr><th>代理类型</th><th>服务器地址</th><th>端口</th><th>用户名</th><th>状态</th><th>延迟</th><th>关联环境</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td>SOCKS5</td><td>10.0.0.1</td><td>1080</td><td>user1</td><td><span class="pt-status ok">&#9679; 正常</span></td><td style="color:#1db954">45ms</td><td>FB-营销账号-01</td><td><button class="act-btn" title="测试" onclick="showToast('success','代理连接正常 45ms')">&#128270;</button><button class="act-btn" title="编辑">&#9998;</button><button class="act-btn dg" title="删除">&#128465;</button></td></tr>
+              <tr><td>HTTP</td><td>192.168.1.5</td><td>8080</td><td>-</td><td><span class="pt-status ok">&#9679; 正常</span></td><td style="color:#1db954">32ms</td><td>TW-运营号-02</td><td><button class="act-btn" title="测试" onclick="showToast('success','代理连接正常 32ms')">&#128270;</button><button class="act-btn" title="编辑">&#9998;</button><button class="act-btn dg" title="删除">&#128465;</button></td></tr>
+              <tr><td>SOCKS5</td><td>172.16.0.3</td><td>7890</td><td>admin</td><td><span class="pt-status ok">&#9679; 正常</span></td><td style="color:#1db954">68ms</td><td>AM-店铺主号</td><td><button class="act-btn" title="测试" onclick="showToast('success','代理连接正常 68ms')">&#128270;</button><button class="act-btn" title="编辑">&#9998;</button><button class="act-btn dg" title="删除">&#128465;</button></td></tr>
+              <tr><td>HTTP</td><td>10.10.10.1</td><td>3128</td><td>-</td><td><span class="pt-status fail">&#9679; 失败</span></td><td style="color:#ff4d4f">超时</td><td>GG-广告投放-01</td><td><button class="act-btn" title="测试" onclick="showToast('error','代理连接超时')">&#128270;</button><button class="act-btn" title="编辑">&#9998;</button><button class="act-btn dg" title="删除">&#128465;</button></td></tr>
+              <tr><td>SS</td><td>10.0.0.5</td><td>8388</td><td>ss-user</td><td><span class="pt-status ok">&#9679; 正常</span></td><td style="color:#1db954">52ms</td><td>IG-网红合作-03</td><td><button class="act-btn" title="测试" onclick="showToast('success','代理连接正常 52ms')">&#128270;</button><button class="act-btn" title="编辑">&#9998;</button><button class="act-btn dg" title="删除">&#128465;</button></td></tr>
+              <tr><td>SOCKS5</td><td>192.168.2.1</td><td>1080</td><td>-</td><td><span class="pt-status untest">&#9679; 未测试</span></td><td>-</td><td>TK-直播号-01</td><td><button class="act-btn" title="测试" onclick="showToast('info','正在测试...')">&#128270;</button><button class="act-btn" title="编辑">&#9998;</button><button class="act-btn dg" title="删除">&#128465;</button></td></tr>
+              <tr><td>HTTPS</td><td>203.0.113.5</td><td>443</td><td>proxy5</td><td><span class="pt-status ok">&#9679; 正常</span></td><td style="color:#1db954">89ms</td><td>未分配</td><td><button class="act-btn" title="测试" onclick="showToast('success','代理连接正常 89ms')">&#128270;</button><button class="act-btn" title="编辑">&#9998;</button><button class="act-btn dg" title="删除">&#128465;</button></td></tr>
+              <tr><td>HTTP</td><td>198.51.100.2</td><td>8888</td><td>-</td><td><span class="pt-status untest">&#9679; 未测试</span></td><td>-</td><td>未分配</td><td><button class="act-btn" title="测试" onclick="showToast('info','正在测试...')">&#128270;</button><button class="act-btn" title="编辑">&#9998;</button><button class="act-btn dg" title="删除">&#128465;</button></td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
+
+      <!-- === Settings Tab === -->
+      <div class="tab-panel" id="panelSettings">
+        <div class="settings-panel">
+          <div class="set-section">
+            <h4>&#9881; 通用设置</h4>
+            <div class="set-row"><span class="set-label">默认并发数</span><div class="set-ctrl"><input type="number" value="5" min="1" max="20"></div></div>
+            <div class="set-row"><span class="set-label">启动延迟(秒)</span><div class="set-ctrl"><input type="number" value="3" min="0" max="30"></div></div>
+            <div class="set-row"><span class="set-label">自动关闭超时</span><div class="set-ctrl"><select><option>从不</option><option>30分钟</option><option selected>1小时</option><option>2小时</option></select></div></div>
+            <div class="set-row"><span class="set-label">关闭时停止浏览器</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          </div>
+          <div class="set-section">
+            <h4>&#128274; 指纹设置</h4>
+            <div class="set-row"><span class="set-label">Canvas 噪声</span><div class="set-ctrl"><select><option>关闭</option><option>轻微</option><option selected>中等</option><option>强烈</option></select></div></div>
+            <div class="set-row"><span class="set-label">AudioContext</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="set-row"><span class="set-label">WebGL 噪声</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="set-row"><span class="set-label">WebRTC 泄露保护</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="set-row"><span class="set-label">Font 指纹保护</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+          </div>
+          <div class="set-section">
+            <h4>&#127760; 浏览器设置</h4>
+            <div class="set-row"><span class="set-label">默认 UserAgent</span><div class="set-ctrl"><select><option selected>Chrome 121 / Windows 10</option><option>Chrome 120 / Windows 11</option><option>Chrome 121 / macOS</option><option>Firefox 122 / Windows 10</option></select></div></div>
+            <div class="set-row"><span class="set-label">默认分辨率</span><div class="set-ctrl"><select><option selected>1920x1080</option><option>1366x768</option><option>2560x1440</option></select></div></div>
+            <div class="set-row"><span class="set-label">默认语言</span><div class="set-ctrl"><select><option selected>zh-CN</option><option>en-US</option><option>ja-JP</option></select></div></div>
+            <div class="set-row"><span class="set-label">默认时区</span><div class="set-ctrl"><select><option selected>Asia/Shanghai (UTC+8)</option><option>America/New_York (UTC-5)</option></select></div></div>
+            <div class="set-row"><span class="set-label">启用 JavaScript</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="set-row"><span class="set-label">启用 Cookies</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          </div>
+          <div class="set-section">
+            <h4>&#128190; 数据存储</h4>
+            <div class="set-row"><span class="set-label">数据库路径</span><div class="set-ctrl"><input type="text" value="C:\FingerprintBrowser\data\browser.db" readonly></div></div>
+            <div class="set-row"><span class="set-label">自动备份</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="set-row"><span class="set-label">备份频率</span><div class="set-ctrl"><select><option>每天</option><option selected>每周</option><option>每月</option></select></div></div>
+          </div>
+          <div style="text-align:right;padding-top:8px"><button class="btn-primary" onclick="showToast('success','设置已保存')">保存设置</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastBox"></div>
+
+  <!-- Dialog: New/Edit Environment -->
+  <div class="dlg-overlay" id="dlgNewEnv">
+    <div class="dlg dlg-md">
+      <div class="dlg-head"><h3>新建环境</h3><button class="dlg-close" onclick="closeDlg('dlgNewEnv')">&times;</button></div>
+      <div class="dlg-body">
+        <div class="f-row"><label class="f-label">环境名称</label><input class="f-ctrl" id="newEnvName" placeholder="请输入环境名称"></div>
+        <div class="f-row"><label class="f-label">所属分组</label><select class="f-ctrl" id="newEnvGroup"></select></div>
+        <div class="f-row"><label class="f-label">备注</label><input class="f-ctrl" placeholder="选填"></div>
+        <div class="f-row" style="margin-top:20px;margin-bottom:8px"><label class="f-label" style="font-weight:600;color:#333">代理设置</label></div>
+        <div class="f-row"><label class="f-label">代理类型</label><select class="f-ctrl"><option>不使用代理</option><option>HTTP</option><option>HTTPS</option><option selected>SOCKS5</option><option>Shadowsocks</option></select></div>
+        <div class="f-row"><label class="f-label">代理服务器</label><input class="f-ctrl" placeholder="IP 地址"></div>
+        <div class="f-row"><label class="f-label">代理端口</label><input class="f-ctrl" placeholder="端口号"></div>
+        <div class="f-row"><label class="f-label">用户名</label><input class="f-ctrl" placeholder="选填"></div>
+        <div class="f-row"><label class="f-label">密码</label><input class="f-ctrl" type="password" placeholder="选填"></div>
+        <div class="f-row" style="margin-top:20px;margin-bottom:8px"><label class="f-label" style="font-weight:600;color:#333">指纹配置</label></div>
+        <div class="f-row"><label class="f-label">UserAgent</label><select class="f-ctrl"><option selected>Chrome 121 / Windows 10</option><option>Chrome 120 / Windows 11</option><option>Chrome 121 / macOS</option></select></div>
+        <div class="f-row"><label class="f-label">屏幕分辨率</label><select class="f-ctrl"><option selected>1920x1080</option><option>1366x768</option><option>2560x1440</option></select></div>
+        <div class="f-row"><label class="f-label">WebGL 供应商</label><select class="f-ctrl"><option selected>Google Inc. (NVIDIA)</option><option>Google Inc. (Intel)</option><option>Google Inc. (AMD)</option></select></div>
+        <div class="f-row"><label class="f-label">Canvas 噪声</label><select class="f-ctrl"><option>轻微</option><option selected>中等</option><option>强烈</option></select></div>
+        <div class="f-row"><label class="f-label">AudioContext</label><div style="flex:1;display:flex;align-items:center;gap:8px"><div class="toggle on" onclick="this.classList.toggle('on')"></div><span style="font-size:12px;color:#1677ff">已开启</span></div></div>
+        <div class="f-row"><label class="f-label">WebRTC</label><div style="flex:1;display:flex;align-items:center;gap:8px"><div class="toggle" onclick="this.classList.toggle('on')"></div><span style="font-size:12px;color:#999">已关闭</span></div></div>
+      </div>
+      <div class="dlg-foot"><button class="btn-cancel" onclick="closeDlg('dlgNewEnv')">取消</button><button class="btn-primary" onclick="addEnv()">创建环境</button></div>
+    </div>
+  </div>
+
+  <!-- Dialog: Edit Environment (Fingerprint) -->
+  <div class="dlg-overlay" id="dlgEditEnv">
+    <div class="dlg dlg-md">
+      <div class="dlg-head"><h3>编辑指纹配置</h3><button class="dlg-close" onclick="closeDlg('dlgEditEnv')">&times;</button></div>
+      <div class="dlg-body">
+        <div class="f-row"><label class="f-label">浏览器指纹</label><input class="f-ctrl ro" value="a3f8d2c1e9b7450682f1d4a3c7e5b902"></div>
+        <div class="f-row"><label class="f-label">环境名称</label><input class="f-ctrl" value="FB-营销账号-01"></div>
+        <div class="f-row"><label class="f-label">所属分组</label><select class="f-ctrl"><option selected>社交媒体</option><option>电商运营</option><option>广告验证</option></select></div>
+        <div class="f-row"><label class="f-label">UserAgent</label><select class="f-ctrl"><option selected>Chrome 121 / Windows 10</option><option>Chrome 120 / Windows 11</option><option>Chrome 121 / macOS</option></select></div>
+        <div class="f-row"><label class="f-label">屏幕分辨率</label><select class="f-ctrl"><option selected>1920x1080</option><option>1366x768</option><option>2560x1440</option></select></div>
+        <div class="f-row"><label class="f-label">WebGL 供应商</label><select class="f-ctrl"><option selected>Google Inc. (NVIDIA)</option><option>Google Inc. (Intel)</option><option>Google Inc. (AMD)</option></select></div>
+        <div class="f-row"><label class="f-label">WebGL 渲染器</label><select class="f-ctrl"><option selected>ANGLE (NVIDIA, GeForce GTX 1060)</option><option>ANGLE (Intel, HD Graphics 630)</option></select></div>
+        <div class="f-row"><label class="f-label">Canvas 噪声</label><select class="f-ctrl"><option>轻微</option><option selected>中等</option><option>强烈</option></select></div>
+        <div class="f-row"><label class="f-label">AudioContext</label><div style="flex:1;display:flex;align-items:center;gap:8px"><div class="toggle on" onclick="this.classList.toggle('on')"></div><span style="font-size:12px;color:#1677ff">已开启</span></div></div>
+        <div class="f-row"><label class="f-label">WebRTC</label><div style="flex:1;display:flex;align-items:center;gap:8px"><div class="toggle" onclick="this.classList.toggle('on')"></div><span style="font-size:12px;color:#999">已关闭</span></div></div>
+        <div class="f-row"><label class="f-label">语言</label><select class="f-ctrl"><option selected>zh-CN (简体中文)</option><option>en-US (英语)</option><option>ja-JP (日语)</option></select></div>
+        <div class="f-row"><label class="f-label">时区</label><select class="f-ctrl"><option selected>Asia/Shanghai (UTC+8)</option><option>America/New_York (UTC-5)</option><option>Europe/London (UTC+0)</option></select></div>
+      </div>
+      <div class="dlg-foot"><button class="btn-cancel" onclick="closeDlg('dlgEditEnv')">取消</button><button class="btn-primary" onclick="closeDlg('dlgEditEnv');showToast('success','指纹配置已保存')">保存配置</button></div>
+    </div>
+  </div>
+
+  <!-- Dialog: New Group -->
+  <div class="dlg-overlay" id="dlgNewGrp">
+    <div class="dlg dlg-sm">
+      <div class="dlg-head"><h3>新建分组</h3><button class="dlg-close" onclick="closeDlg('dlgNewGrp')">&times;</button></div>
+      <div class="dlg-body">
+        <div class="f-row"><label class="f-label">分组名称</label><input class="f-ctrl" id="newGrpName" placeholder="请输入分组名称"></div>
+        <div class="f-row"><label class="f-label">分组颜色</label><div style="flex:1;display:flex;gap:8px" id="colorPicker">
+          <span class="clr-opt" style="background:#f5222d" data-c="#f5222d" onclick="pickColor(this)"></span>
+          <span class="clr-opt" style="background:#fa8c16" data-c="#fa8c16" onclick="pickColor(this)"></span>
+          <span class="clr-opt" style="background:#fadb14" data-c="#fadb14" onclick="pickColor(this)"></span>
+          <span class="clr-opt" style="background:#52c41a" data-c="#52c41a" onclick="pickColor(this)"></span>
+          <span class="clr-opt" style="background:#13c2c2" data-c="#13c2c2" onclick="pickColor(this)"></span>
+          <span class="clr-opt selected" style="background:#1677ff" data-c="#1677ff" onclick="pickColor(this)"></span>
+          <span class="clr-opt" style="background:#722ed1" data-c="#722ed1" onclick="pickColor(this)"></span>
+          <span class="clr-opt" style="background:#eb2f96" data-c="#eb2f96" onclick="pickColor(this)"></span>
+        </div></div>
+        <style>.clr-opt{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:.15s}.clr-opt:hover{transform:scale(1.15)}.clr-opt.selected{border-color:#333;box-shadow:0 0 0 2px #fff,0 0 0 4px #333}</style>
+      </div>
+      <div class="dlg-foot"><button class="btn-cancel" onclick="closeDlg('dlgNewGrp')">取消</button><button class="btn-primary" onclick="addGroup()">创建分组</button></div>
+    </div>
+  </div>
+
+  <!-- Dialog: New Proxy -->
+  <div class="dlg-overlay" id="dlgNewProxy">
+    <div class="dlg dlg-sm">
+      <div class="dlg-head"><h3>添加代理</h3><button class="dlg-close" onclick="closeDlg('dlgNewProxy')">&times;</button></div>
+      <div class="dlg-body">
+        <div class="f-row"><label class="f-label">代理类型</label><select class="f-ctrl"><option>HTTP</option><option>HTTPS</option><option selected>SOCKS5</option><option>Shadowsocks</option></select></div>
+        <div class="f-row"><label class="f-label">服务器地址</label><input class="f-ctrl" placeholder="IP 地址"></div>
+        <div class="f-row"><label class="f-label">端口</label><input class="f-ctrl" placeholder="端口号"></div>
+        <div class="f-row"><label class="f-label">用户名</label><input class="f-ctrl" placeholder="选填"></div>
+        <div class="f-row"><label class="f-label">密码</label><input class="f-ctrl" type="password" placeholder="选填"></div>
+      </div>
+      <div class="dlg-foot"><button class="btn-cancel" onclick="closeDlg('dlgNewProxy')">取消</button><button class="btn-success" onclick="showToast('info','正在测试连接...')">测试连接</button><button class="btn-primary" onclick="closeDlg('dlgNewProxy');showToast('success','代理已添加')">添加</button></div>
     </div>
   </div>
 </div>
 
+<script>
+// ============= DATA =============
+const COLORS = ['#1677ff','#f5222d','#fa8c16','#52c41a','#722ed1','#13c2c2','#eb2f96','#2f54eb'];
+let groups = [
+  {id:'all',name:'全部环境',color:'#1677ff',system:true},
+  {id:'g1',name:'社交媒体',color:'#f5222d'},
+  {id:'g2',name:'电商运营',color:'#fa8c16'},
+  {id:'g3',name:'广告验证',color:'#52c41a'},
+  {id:'g4',name:'开发测试',color:'#722ed1'},
+  {id:'g5',name:'数据采集',color:'#13c2c2'}
+];
+let envs = [
+  {id:1,name:'FB-营销账号-01',group:'g1',abbr:'FB',color:'#1677ff',running:true,proxy:'SOCKS5 10.0.0.1:1080',last:'2024-01-15 14:30',fp:'a3f8d2c1...'},
+  {id:2,name:'TW-运营号-02',group:'g1',abbr:'TW',color:'#1da1f2',running:true,proxy:'HTTP 192.168.1.5:8080',last:'2024-01-15 13:22',fp:'b7e4f3a8...'},
+  {id:3,name:'AM-店铺主号',group:'g2',abbr:'AM',color:'#fa8c16',running:false,proxy:'SOCKS5 172.16.0.3:7890',last:'2024-01-14 09:15',fp:'c9d1e5b2...'},
+  {id:4,name:'GG-广告投放-01',group:'g3',abbr:'GG',color:'#f5222d',running:false,proxy:'HTTP 10.10.10.1:3128',last:'2024-01-13 18:40',fp:'d2f6a8c3...'},
+  {id:5,name:'IG-网红合作-03',group:'g1',abbr:'IG',color:'#722ed1',running:true,proxy:'SS 10.0.0.5:8388',last:'2024-01-15 15:01',fp:'e5b9c4d1...'},
+  {id:6,name:'EB-客服号-01',group:'g2',abbr:'EB',color:'#13c2c2',running:false,proxy:'',last:'2024-01-12 11:30',fp:'f1a2b3c4...'},
+  {id:7,name:'TK-直播号-01',group:'g1',abbr:'TK',color:'#eb2f96',running:false,proxy:'SOCKS5 192.168.2.1:1080',last:'2024-01-11 20:55',fp:'a4c5d6e7...'},
+  {id:8,name:'DEV-自动化测试',group:'g4',abbr:'DV',color:'#2f54eb',running:false,proxy:'',last:'2024-01-10 16:20',fp:'b8d9e1f2...'},
+  {id:9,name:'FB-个人号-02',group:'g1',abbr:'FB',color:'#1677ff',running:false,proxy:'HTTP 203.0.113.5:443',last:'2024-01-09 08:45',fp:'c3e4f5a6...'},
+  {id:10,name:'AM-跟卖监控',group:'g2',abbr:'AM',color:'#fa8c16',running:false,proxy:'SOCKS5 10.0.0.8:1080',last:'2024-01-08 22:10',fp:'d7f8a9b1...'},
+  {id:11,name:'SP-数据爬虫-01',group:'g5',abbr:'SP',color:'#13c2c2',running:false,proxy:'SOCKS5 172.16.0.10:9050',last:'2024-01-07 14:55',fp:'e2a3b4c5...'},
+  {id:12,name:'GG-素材审核-02',group:'g3',abbr:'GG',color:'#f5222d',running:false,proxy:'HTTP 198.51.100.2:8888',last:'2024-01-06 17:30',fp:'f6c7d8e9...'}
+];
+let nextId = 13;
+let activeGroup = 'all';
+let selectedIds = new Set();
+let currentView = 'list';
+let selectedColor = '#1677ff';
+
+// ============= RENDER =============
+function renderGroups(){
+  const el = document.getElementById('groupList');
+  el.innerHTML = groups.map(g => {
+    const cnt = g.id==='all' ? envs.length : envs.filter(e=>e.group===g.id).length;
+    return `<div class="grp-item ${activeGroup===g.id?'active':''}" onclick="selectGroup('${g.id}')">
+      <span class="dot" style="background:${g.color}"></span>${g.name}
+      <span class="cnt">${cnt}</span>
+      ${g.system?'':`<button class="del-grp" onclick="event.stopPropagation();deleteGroup('${g.id}')" title="删除分组">&times;</button>`}
+    </div>`;
+  }).join('');
+  // update new env group dropdown
+  const sel = document.getElementById('newEnvGroup');
+  if(sel) sel.innerHTML = groups.filter(g=>!g.system).map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+}
+
+function renderTable(){
+  const filtered = getFilteredEnvs();
+  const tbody = document.getElementById('envTbody');
+  tbody.innerHTML = filtered.map((e,i) => {
+    const grpName = groups.find(g=>g.id===e.group)?.name||'';
+    return `<tr class="${selectedIds.has(e.id)?'selected':''}">
+      <td class="ck-cell"><input type="checkbox" ${selectedIds.has(e.id)?'checked':''} onchange="toggleSelect(${e.id},this.checked)"></td>
+      <td class="num-cell">${i+1}</td>
+      <td><div class="name-cell"><div class="avatar" style="background:${e.color}">${e.abbr}</div><div><div class="name-txt">${e.name}</div><div class="name-sub">${grpName}</div></div></div></td>
+      <td><span class="pill ${e.running?'run':'stop'}"><span class="sd"></span>${e.running?'运行中':'已停止'}</span></td>
+      <td><div class="os-i">W</div></td>
+      <td>${e.proxy?`<span class="proxy-t">${e.proxy}</span>`:'<span class="proxy-t none">未配置代理</span>'}</td>
+      <td style="font-size:12px;color:#888">${e.last}</td>
+      <td><div class="act-btns">
+        <button class="act-btn ${e.running?'running-btn':''}" title="${e.running?'停止':'启动'}" onclick="toggleEnv(${e.id})">${e.running?'&#9632;':'&#9654;'}</button>
+        <button class="act-btn" title="编辑" onclick="openDlg('dlgEditEnv')">&#9998;</button>
+        <button class="act-btn" title="指纹" onclick="openDlg('dlgEditEnv')">&#128274;</button>
+        <button class="act-btn dg" title="删除" onclick="deleteEnv(${e.id})">&#128465;</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  updateCounts();
+  renderGrid(filtered);
+}
+
+function renderGrid(filtered){
+  const wrap = document.getElementById('gridWrap');
+  wrap.innerHTML = (filtered||getFilteredEnvs()).map(e => {
+    const grpName = groups.find(g=>g.id===e.group)?.name||'';
+    return `<div class="env-card ${selectedIds.has(e.id)?'selected':''}" onclick="toggleSelect(${e.id},!selectedIds.has(${e.id}))">
+      <span class="pill ${e.running?'run':'stop'} card-status"><span class="sd"></span>${e.running?'运行中':'已停止'}</span>
+      <div class="card-head"><div class="card-av" style="background:${e.color}">${e.abbr}</div><div class="card-name">${e.name}</div></div>
+      <div class="card-info">分组: ${grpName}<br>代理: ${e.proxy||'未配置'}<br>最后打开: ${e.last}</div>
+      <div class="card-actions">
+        <button onclick="event.stopPropagation();toggleEnv(${e.id})">${e.running?'&#9632; 停止':'&#9654; 启动'}</button>
+        <button onclick="event.stopPropagation();openDlg('dlgEditEnv')">&#9998; 编辑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getFilteredEnvs(){
+  let list = activeGroup==='all' ? envs : envs.filter(e=>e.group===activeGroup);
+  const q = document.getElementById('searchInput')?.value?.toLowerCase()||'';
+  if(q) list = list.filter(e=>e.name.toLowerCase().includes(q));
+  return list;
+}
+
+function updateCounts(){
+  const run = envs.filter(e=>e.running).length;
+  document.getElementById('totalCount').textContent = envs.length;
+  document.getElementById('runCount').textContent = run;
+  document.getElementById('stopCount').textContent = envs.length - run;
+  document.getElementById('envBadge').textContent = envs.length;
+}
+
+// ============= INTERACTIONS =============
+function selectGroup(id){ activeGroup=id; selectedIds.clear(); renderGroups(); renderTable(); }
+
+function toggleSelect(id,checked){
+  if(checked) selectedIds.add(id); else selectedIds.delete(id);
+  renderTable();
+}
+
+function toggleAll(el){
+  const filtered = getFilteredEnvs();
+  if(el.checked) filtered.forEach(e=>selectedIds.add(e.id)); else selectedIds.clear();
+  renderTable();
+}
+
+function toggleEnv(id){
+  const e = envs.find(x=>x.id===id);
+  if(!e) return;
+  e.running = !e.running;
+  showToast(e.running?'success':'info', e.running?`${e.name} 已启动`:`${e.name} 已停止`);
+  renderTable();
+}
+
+function deleteEnv(id){
+  const e = envs.find(x=>x.id===id);
+  if(!e) return;
+  envs = envs.filter(x=>x.id!==id);
+  selectedIds.delete(id);
+  showToast('info',`${e.name} 已删除`);
+  renderGroups(); renderTable();
+}
+
+function deleteSelected(){
+  if(!selectedIds.size) return showToast('error','请先选择环境');
+  const cnt = selectedIds.size;
+  envs = envs.filter(e=>!selectedIds.has(e.id));
+  selectedIds.clear();
+  showToast('info',`已删除 ${cnt} 个环境`);
+  renderGroups(); renderTable();
+}
+
+function startSelected(){
+  if(!selectedIds.size) return showToast('error','请先选择环境');
+  let cnt=0;
+  envs.forEach(e=>{if(selectedIds.has(e.id)&&!e.running){e.running=true;cnt++}});
+  showToast('success',`已启动 ${cnt} 个环境`);
+  renderTable();
+}
+
+function stopSelected(){
+  if(!selectedIds.size) return showToast('error','请先选择环境');
+  let cnt=0;
+  envs.forEach(e=>{if(selectedIds.has(e.id)&&e.running){e.running=false;cnt++}});
+  showToast('info',`已停止 ${cnt} 个环境`);
+  renderTable();
+}
+
+function batchStart(){
+  const stopped = envs.filter(e=>!e.running);
+  const toStart = stopped.slice(0, 5);
+  toStart.forEach(e=>e.running=true);
+  showToast('success',`批量启动 ${toStart.length} 个环境${stopped.length>5?' (受并发上限限制)':''}`);
+  renderTable();
+}
+
+function batchStop(){
+  const running = envs.filter(e=>e.running);
+  running.forEach(e=>e.running=false);
+  showToast('info',`已停止全部 ${running.length} 个运行中环境`);
+  renderTable();
+}
+
+function filterEnvs(){ renderTable(); }
+
+function setView(v){
+  currentView = v;
+  document.getElementById('viewList').classList.toggle('active',v==='list');
+  document.getElementById('viewGrid').classList.toggle('active',v==='grid');
+  document.getElementById('tblWrap').style.display = v==='list'?'':'none';
+  document.getElementById('gridWrap').style.display = v==='grid'?'flex':'none';
+  document.getElementById('gridWrap').classList.toggle('active',v==='grid');
+}
+
+function addEnv(){
+  const name = document.getElementById('newEnvName').value.trim();
+  if(!name) return showToast('error','请输入环境名称');
+  const gid = document.getElementById('newEnvGroup').value;
+  const grp = groups.find(g=>g.id===gid);
+  const abbr = name.substring(0,2).toUpperCase();
+  const color = grp?.color||COLORS[Math.floor(Math.random()*COLORS.length)];
+  envs.push({id:nextId++,name,group:gid,abbr,color,running:false,proxy:'',last:'刚刚',fp:Math.random().toString(36).substring(2,10)+'...'});
+  closeDlg('dlgNewEnv');
+  document.getElementById('newEnvName').value='';
+  showToast('success',`环境 "${name}" 已创建`);
+  renderGroups(); renderTable();
+}
+
+function addGroup(){
+  const name = document.getElementById('newGrpName').value.trim();
+  if(!name) return showToast('error','请输入分组名称');
+  const id = 'g'+Date.now();
+  groups.push({id,name,color:selectedColor});
+  closeDlg('dlgNewGrp');
+  document.getElementById('newGrpName').value='';
+  showToast('success',`分组 "${name}" 已创建`);
+  renderGroups();
+}
+
+function deleteGroup(id){
+  const g = groups.find(x=>x.id===id);
+  if(!g) return;
+  // move envs to no group
+  envs.forEach(e=>{if(e.group===id) e.group='g1'});
+  groups = groups.filter(x=>x.id!==id);
+  if(activeGroup===id) activeGroup='all';
+  showToast('info',`分组 "${g.name}" 已删除，环境已移至"社交媒体"`);
+  renderGroups(); renderTable();
+}
+
+function pickColor(el){
+  document.querySelectorAll('.clr-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedColor = el.dataset.c;
+}
+
+// ============= TABS =============
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='panel'+tab.charAt(0).toUpperCase()+tab.slice(1)));
+}
+
+// ============= DIALOGS =============
+function openDlg(id){ document.getElementById(id).classList.add('show'); }
+function closeDlg(id){ document.getElementById(id).classList.remove('show'); }
+
+// ============= TOAST =============
+function showToast(type,msg){
+  const box = document.getElementById('toastBox');
+  const t = document.createElement('div');
+  t.className = 'toast '+type;
+  const icons = {success:'&#10003;',error:'&#10007;',info:'&#9432;'};
+  t.innerHTML = `<span>${icons[type]||''}</span> ${msg}`;
+  box.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+
+// ============= INIT =============
+renderGroups();
+renderTable();
+</script>
 </body>
 </html>
