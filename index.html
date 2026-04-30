@@ -1,33 +1,862 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="扣子编程，你的 AI 开发伙伴已就位" />
-    <title>扣子编程 - AI 开发伙伴</title>
-    <link rel="stylesheet" href="/styles/main.css" />
-  </head>
-  <body>
-    <div id="app">
-      <main class="main-wrapper">
-        <div class="content-container">
-          <img
-            src="https://lf-coze-web-cdn.coze.cn/obj/eden-cn/lm-lgvj/ljhwZthlaukjlkulzlp/coze-coding/icon/coze-coding.gif"
-            alt="扣子编程 Logo"
-            class="logo-image"
-          />
-          <div>
-            <div class="text-container">
-              <h1 class="heading">
-                应用开发中
-              </h1>
-              <p class="description">
-                请稍后，页面即将呈现
-              </p>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FingerprintBrowser - 指纹浏览器</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #e8ecf1;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .app-window {
+    width: 1280px;
+    height: 800px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* === Title Bar === */
+  .title-bar {
+    height: 36px;
+    background: #1e3a5f;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    flex-shrink: 0;
+  }
+  .title-bar .traffic-lights {
+    display: flex;
+    gap: 8px;
+  }
+  .traffic-lights span {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+  .traffic-lights .close { background: #ff5f57; }
+  .traffic-lights .minimize { background: #ffbd2e; }
+  .traffic-lights .maximize { background: #28c840; }
+  .title-bar .title-text {
+    flex: 1;
+    text-align: center;
+    color: #a8c4de;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+  }
+  .title-bar .title-icons {
+    display: flex;
+    gap: 12px;
+    color: #7fa3c4;
+    font-size: 13px;
+  }
+
+  /* === Main Layout === */
+  .main-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* === Left Sidebar === */
+  .sidebar {
+    width: 220px;
+    background: #f7f8fa;
+    border-right: 1px solid #e8eaed;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .sidebar-header {
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+  }
+  .btn-new-env {
+    width: 100%;
+    height: 38px;
+    background: #1677ff;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-new-env:hover { background: #4096ff; }
+  .btn-new-env .icon-plus {
+    width: 16px; height: 16px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+  }
+  .sidebar-actions {
+    padding: 12px 16px;
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid #eee;
+  }
+  .sidebar-actions button {
+    flex: 1;
+    height: 32px;
+    border: 1px solid #d9d9d9;
+    background: #fff;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #555;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .sidebar-actions button:hover { border-color: #1677ff; color: #1677ff; }
+  .sidebar-actions button .play-icon {
+    width: 0; height: 0;
+    border-left: 6px solid currentColor;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+  }
+  .sidebar-actions button .stop-icon {
+    width: 8px; height: 8px;
+    background: currentColor;
+    border-radius: 1px;
+  }
+
+  .sidebar-section-title {
+    padding: 12px 16px 6px;
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sidebar-section-title .add-icon {
+    color: #1677ff;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .group-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 8px;
+  }
+  .group-item {
+    height: 36px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #333;
+    gap: 8px;
+    transition: background 0.15s;
+  }
+  .group-item:hover { background: #eef3ff; }
+  .group-item.active { background: #e6f0ff; color: #1677ff; font-weight: 500; }
+  .group-item .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .group-item .count {
+    margin-left: auto;
+    background: #e8eaed;
+    color: #666;
+    font-size: 11px;
+    padding: 1px 8px;
+    border-radius: 10px;
+  }
+  .group-item.active .count { background: #d6e4ff; color: #1677ff; }
+
+  /* === Right Content === */
+  .content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* === Toolbar === */
+  .toolbar {
+    height: 50px;
+    border-bottom: 1px solid #e8eaed;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 8px;
+  }
+  .toolbar-btn {
+    height: 32px;
+    padding: 0 14px;
+    border: 1px solid #d9d9d9;
+    background: #fff;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #555;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s;
+  }
+  .toolbar-btn:hover { border-color: #1677ff; color: #1677ff; }
+  .toolbar-btn.primary { background: #1677ff; color: #fff; border-color: #1677ff; }
+  .toolbar-btn.primary:hover { background: #4096ff; }
+  .toolbar-btn svg { width: 14px; height: 14px; }
+  .toolbar-sep { width: 1px; height: 20px; background: #e8eaed; margin: 0 4px; }
+  .toolbar-spacer { flex: 1; }
+  .search-box {
+    height: 32px;
+    width: 220px;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    padding: 0 10px 0 32px;
+    font-size: 12px;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23999'%3E%3Cpath d='M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E") no-repeat 8px center/16px;
+    outline: none;
+  }
+  .search-box:focus { border-color: #1677ff; }
+
+  /* === Data Table === */
+  .table-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  thead th {
+    height: 40px;
+    background: #fafbfc;
+    border-bottom: 1px solid #e8eaed;
+    font-size: 12px;
+    font-weight: 500;
+    color: #888;
+    text-align: left;
+    padding: 0 12px;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+  }
+  tbody tr {
+    height: 52px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.1s;
+  }
+  tbody tr:hover { background: #f7f9ff; }
+  tbody td {
+    padding: 0 12px;
+    font-size: 13px;
+    color: #333;
+    white-space: nowrap;
+  }
+  .cell-checkbox { width: 40px; text-align: center; }
+  .cell-checkbox input { accent-color: #1677ff; }
+  .cell-num { width: 50px; color: #999; font-size: 12px; }
+  .cell-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 12px; font-weight: 600; flex-shrink: 0;
+  }
+  .name-text { font-weight: 500; }
+  .name-group { font-size: 11px; color: #999; }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .status-pill.running { background: #e6f9ee; color: #1db954; }
+  .status-pill.stopped { background: #f0f0f0; color: #999; }
+  .status-pill .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .status-pill.running .dot { background: #1db954; }
+  .status-pill.stopped .dot { background: #bbb; }
+
+  .os-icon {
+    width: 18px; height: 18px;
+    background: #0078d4;
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 10px; font-weight: 700;
+  }
+
+  .proxy-text { color: #666; font-size: 12px; font-family: "SF Mono", "Consolas", monospace; }
+  .proxy-text.no-proxy { color: #bbb; font-family: inherit; }
+
+  .action-btns { display: flex; gap: 4px; }
+  .action-btn {
+    width: 28px; height: 28px;
+    border: none; background: transparent;
+    border-radius: 4px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #999; font-size: 14px;
+    transition: all 0.15s;
+  }
+  .action-btn:hover { background: #e6f0ff; color: #1677ff; }
+  .action-btn.danger:hover { background: #fff1f0; color: #ff4d4f; }
+
+  /* === Status Bar === */
+  .status-bar {
+    height: 30px;
+    background: #fafbfc;
+    border-top: 1px solid #e8eaed;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 11px;
+    color: #999;
+    gap: 16px;
+  }
+  .status-bar .status-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #1db954;
+  }
+
+  /* === Dialog Overlay === */
+  .dialog-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  /* === Dialog: Fingerprint Config === */
+  .dialog {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.15);
+    overflow: hidden;
+    animation: dialogIn 0.2s ease;
+  }
+  @keyframes dialogIn {
+    from { opacity: 0; transform: scale(0.95) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .dialog-fp { width: 480px; }
+  .dialog-proxy { width: 420px; margin-right: 530px; margin-top: -80px; }
+
+  .dialog-header {
+    height: 48px;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #e8eaed;
+  }
+  .dialog-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+  .dialog-close {
+    width: 24px; height: 24px;
+    border: none; background: transparent;
+    color: #999; font-size: 16px;
+    cursor: pointer; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dialog-close:hover { background: #f0f0f0; color: #333; }
+
+  .dialog-body {
+    padding: 20px;
+    max-height: 480px;
+    overflow-y: auto;
+  }
+  .form-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 14px;
+    gap: 12px;
+  }
+  .form-label {
+    width: 100px;
+    font-size: 12px;
+    color: #666;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .form-control {
+    flex: 1;
+    height: 32px;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    padding: 0 10px;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-control:focus { border-color: #1677ff; }
+  .form-control.readonly {
+    background: #f7f8fa;
+    color: #888;
+    font-family: "SF Mono", "Consolas", monospace;
+    font-size: 11px;
+  }
+  select.form-control {
+    appearance: none;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23999'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") no-repeat right 8px center/14px;
+    cursor: pointer;
+  }
+  .toggle-switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: #d9d9d9;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle-switch.on { background: #1677ff; }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    top: 2px; left: 2px;
+    transition: left 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+  .toggle-switch.on::after { left: 18px; }
+
+  .dialog-footer {
+    padding: 12px 20px;
+    border-top: 1px solid #e8eaed;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .btn-cancel {
+    height: 32px;
+    padding: 0 16px;
+    border: 1px solid #d9d9d9;
+    background: #fff;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #555;
+    cursor: pointer;
+  }
+  .btn-cancel:hover { border-color: #1677ff; color: #1677ff; }
+  .btn-save {
+    height: 32px;
+    padding: 0 20px;
+    background: #1677ff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .btn-save:hover { background: #4096ff; }
+  .btn-test {
+    height: 32px;
+    padding: 0 16px;
+    background: #1677ff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  /* Dual dialogs layout */
+  .dialogs-container {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+</style>
+</head>
+<body>
+
+<div class="app-window">
+  <!-- Title Bar -->
+  <div class="title-bar">
+    <div class="traffic-lights">
+      <span class="close"></span>
+      <span class="minimize"></span>
+      <span class="maximize"></span>
+    </div>
+    <div class="title-text">FingerprintBrowser - 指纹浏览器管理系统</div>
+    <div class="title-icons">
+      <span>&#9881;</span>
+    </div>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="main-layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <button class="btn-new-env">
+          <span class="icon-plus">+</span>
+          新建环境
+        </button>
+      </div>
+      <div class="sidebar-actions">
+        <button><span class="play-icon"></span> 启动全部</button>
+        <button><span class="stop-icon"></span> 停止全部</button>
+      </div>
+      <div class="sidebar-section-title">
+        分组列表
+        <span class="add-icon">+</span>
+      </div>
+      <div class="group-list">
+        <div class="group-item active">
+          <span class="dot" style="background:#1677ff"></span>
+          全部环境
+          <span class="count">12</span>
+        </div>
+        <div class="group-item">
+          <span class="dot" style="background:#f5222d"></span>
+          社交媒体
+          <span class="count">5</span>
+        </div>
+        <div class="group-item">
+          <span class="dot" style="background:#fa8c16"></span>
+          电商运营
+          <span class="count">3</span>
+        </div>
+        <div class="group-item">
+          <span class="dot" style="background:#52c41a"></span>
+          广告验证
+          <span class="count">2</span>
+        </div>
+        <div class="group-item">
+          <span class="dot" style="background:#722ed1"></span>
+          开发测试
+          <span class="count">1</span>
+        </div>
+        <div class="group-item">
+          <span class="dot" style="background:#13c2c2"></span>
+          数据采集
+          <span class="count">1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <button class="toolbar-btn primary">
+          <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+          启动
+        </button>
+        <button class="toolbar-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+          停止
+        </button>
+        <div class="toolbar-sep"></div>
+        <button class="toolbar-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4v7m0-7l7 7"/></svg>
+          编辑
+        </button>
+        <button class="toolbar-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2v2"/></svg>
+          删除
+        </button>
+        <button class="toolbar-btn">
+          批量操作 &#9662;
+        </button>
+        <div class="toolbar-spacer"></div>
+        <input type="text" class="search-box" placeholder="搜索环境名称...">
+      </div>
+
+      <!-- Data Table -->
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th class="cell-checkbox"><input type="checkbox"></th>
+              <th class="cell-num">#</th>
+              <th style="width:200px">环境名称</th>
+              <th style="width:90px">状态</th>
+              <th style="width:60px">系统</th>
+              <th style="width:200px">代理信息</th>
+              <th style="width:140px">最后打开</th>
+              <th style="width:120px">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="cell-checkbox"><input type="checkbox" checked></td>
+              <td class="cell-num">1</td>
+              <td><div class="cell-name"><div class="avatar" style="background:#1677ff">FB</div><div><div class="name-text">FB-营销账号-01</div><div class="name-group">社交媒体</div></div></div></td>
+              <td><span class="status-pill running"><span class="dot"></span>运行中</span></td>
+              <td><div class="os-icon">W</div></td>
+              <td><span class="proxy-text">SOCKS5 10.0.0.1:1080</span></td>
+              <td style="font-size:12px;color:#888">2024-01-15 14:30</td>
+              <td><div class="action-btns"><button class="action-btn" title="打开浏览器">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
+            </tr>
+            <tr>
+              <td class="cell-checkbox"><input type="checkbox"></td>
+              <td class="cell-num">2</td>
+              <td><div class="cell-name"><div class="avatar" style="background:#52c41a">TW</div><div><div class="name-text">TW-运营号-02</div><div class="name-group">社交媒体</div></div></div></td>
+              <td><span class="status-pill running"><span class="dot"></span>运行中</span></td>
+              <td><div class="os-icon">W</div></td>
+              <td><span class="proxy-text">HTTP 192.168.1.5:8080</span></td>
+              <td style="font-size:12px;color:#888">2024-01-15 13:22</td>
+              <td><div class="action-btns"><button class="action-btn" title="打开浏览器">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
+            </tr>
+            <tr>
+              <td class="cell-checkbox"><input type="checkbox"></td>
+              <td class="cell-num">3</td>
+              <td><div class="cell-name"><div class="avatar" style="background:#fa8c16">AM</div><div><div class="name-text">AM-店铺主号</div><div class="name-group">电商运营</div></div></div></td>
+              <td><span class="status-pill stopped"><span class="dot"></span>已停止</span></td>
+              <td><div class="os-icon">W</div></td>
+              <td><span class="proxy-text">SOCKS5 172.16.0.3:7890</span></td>
+              <td style="font-size:12px;color:#888">2024-01-14 09:15</td>
+              <td><div class="action-btns"><button class="action-btn" title="启动">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
+            </tr>
+            <tr>
+              <td class="cell-checkbox"><input type="checkbox"></td>
+              <td class="cell-num">4</td>
+              <td><div class="cell-name"><div class="avatar" style="background:#f5222d">GG</div><div><div class="name-text">GG-广告投放-01</div><div class="name-group">广告验证</div></div></div></td>
+              <td><span class="status-pill stopped"><span class="dot"></span>已停止</span></td>
+              <td><div class="os-icon">W</div></td>
+              <td><span class="proxy-text">HTTP 10.10.10.1:3128</span></td>
+              <td style="font-size:12px;color:#888">2024-01-13 18:40</td>
+              <td><div class="action-btns"><button class="action-btn" title="启动">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
+            </tr>
+            <tr>
+              <td class="cell-checkbox"><input type="checkbox"></td>
+              <td class="cell-num">5</td>
+              <td><div class="cell-name"><div class="avatar" style="background:#722ed1">IG</div><div><div class="name-text">IG-网红合作-03</div><div class="name-group">社交媒体</div></div></div></td>
+              <td><span class="status-pill running"><span class="dot"></span>运行中</span></td>
+              <td><div class="os-icon">W</div></td>
+              <td><span class="proxy-text">SS 10.0.0.5:8388</span></td>
+              <td style="font-size:12px;color:#888">2024-01-15 15:01</td>
+              <td><div class="action-btns"><button class="action-btn" title="打开浏览器">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
+            </tr>
+            <tr>
+              <td class="cell-checkbox"><input type="checkbox"></td>
+              <td class="cell-num">6</td>
+              <td><div class="cell-name"><div class="avatar" style="background:#13c2c2">EB</div><div><div class="name-text">EB-客服号-01</div><div class="name-group">电商运营</div></div></div></td>
+              <td><span class="status-pill stopped"><span class="dot"></span>已停止</span></td>
+              <td><div class="os-icon">W</div></td>
+              <td><span class="proxy-text no-proxy">未配置代理</span></td>
+              <td style="font-size:12px;color:#888">2024-01-12 11:30</td>
+              <td><div class="action-btns"><button class="action-btn" title="启动">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
+            </tr>
+            <tr>
+              <td class="cell-checkbox"><input type="checkbox"></td>
+              <td class="cell-num">7</td>
+              <td><div class="cell-name"><div class="avatar" style="background:#eb2f96">TK</div><div><div class="name-text">TK-直播号-01</div><div class="name-group">社交媒体</div></div></div></td>
+              <td><span class="status-pill stopped"><span class="dot"></span>已停止</span></td>
+              <td><div class="os-icon">W</div></td>
+              <td><span class="proxy-text">SOCKS5 192.168.2.1:1080</span></td>
+              <td style="font-size:12px;color:#888">2024-01-11 20:55</td>
+              <td><div class="action-btns"><button class="action-btn" title="启动">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
+            </tr>
+            <tr>
+              <td class="cell-checkbox"><input type="checkbox"></td>
+              <td class="cell-num">8</td>
+              <td><div class="cell-name"><div class="avatar" style="background:#2f54eb">DEV</div><div><div class="name-text">DEV-自动化测试</div><div class="name-group">开发测试</div></div></div></td>
+              <td><span class="status-pill stopped"><span class="dot"></span>已停止</span></td>
+              <td><div class="os-icon">W</div></td>
+              <td><span class="proxy-text no-proxy">未配置代理</span></td>
+              <td style="font-size:12px;color:#888">2024-01-10 16:20</td>
+              <td><div class="action-btns"><button class="action-btn" title="启动">&#9654;</button><button class="action-btn" title="编辑">&#9998;</button><button class="action-btn danger" title="删除">&#128465;</button></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <span class="status-dot"></span>
+        <span>服务正常运行</span>
+        <span>|</span>
+        <span>总计: <b style="color:#333">12</b></span>
+        <span>运行中: <b style="color:#1db954">3</b></span>
+        <span>已停止: <b style="color:#999">9</b></span>
+        <div style="flex:1"></div>
+        <span>并发上限: 5</span>
+        <span>|</span>
+        <span>Playwright: 已就绪</span>
+      </div>
+
+      <!-- Dialogs -->
+      <div class="dialogs-container">
+        <!-- Proxy Settings Dialog -->
+        <div class="dialog dialog-proxy">
+          <div class="dialog-header">
+            <h3>代理设置</h3>
+            <button class="dialog-close">&times;</button>
+          </div>
+          <div class="dialog-body">
+            <div class="form-row">
+              <label class="form-label">代理类型</label>
+              <select class="form-control">
+                <option>HTTP</option>
+                <option>HTTPS</option>
+                <option selected>SOCKS5</option>
+                <option>Shadowsocks</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-label">代理服务器</label>
+              <input type="text" class="form-control" value="10.0.0.1" placeholder="请输入代理服务器地址">
+            </div>
+            <div class="form-row">
+              <label class="form-label">代理端口</label>
+              <input type="text" class="form-control" value="1080" placeholder="端口号">
+            </div>
+            <div class="form-row">
+              <label class="form-label">用户名</label>
+              <input type="text" class="form-control" placeholder="选填">
+            </div>
+            <div class="form-row">
+              <label class="form-label">密码</label>
+              <input type="password" class="form-control" placeholder="选填">
             </div>
           </div>
+          <div class="dialog-footer">
+            <button class="btn-cancel">取消</button>
+            <button class="btn-test">测试连接</button>
+            <button class="btn-save">保存</button>
+          </div>
         </div>
-      </main>
+
+        <!-- Fingerprint Config Dialog -->
+        <div class="dialog dialog-fp">
+          <div class="dialog-header">
+            <h3>指纹配置</h3>
+            <button class="dialog-close">&times;</button>
+          </div>
+          <div class="dialog-body">
+            <div class="form-row">
+              <label class="form-label">浏览器指纹</label>
+              <input type="text" class="form-control readonly" value="a3f8d2c1e9b7450682f1d4a3c7e5b902">
+            </div>
+            <div class="form-row">
+              <label class="form-label">User Agent</label>
+              <select class="form-control">
+                <option>Chrome 121 / Windows 10</option>
+                <option>Chrome 120 / Windows 11</option>
+                <option>Chrome 121 / macOS</option>
+                <option>Firefox 122 / Windows 10</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-label">屏幕分辨率</label>
+              <select class="form-control">
+                <option>1920 x 1080</option>
+                <option>1366 x 768</option>
+                <option>2560 x 1440</option>
+                <option>1536 x 864</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-label">WebGL 供应商</label>
+              <select class="form-control">
+                <option>Google Inc. (NVIDIA)</option>
+                <option>Google Inc. (Intel)</option>
+                <option>Google Inc. (AMD)</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-label">WebGL 渲染器</label>
+              <select class="form-control">
+                <option>ANGLE (NVIDIA, GeForce GTX 1060)</option>
+                <option>ANGLE (Intel, HD Graphics 630)</option>
+                <option>ANGLE (AMD, Radeon RX 580)</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-label">Canvas 噪声</label>
+              <select class="form-control">
+                <option>轻微噪声</option>
+                <option selected>中等噪声</option>
+                <option>强烈噪声</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-label">AudioContext</label>
+              <div class="toggle-switch on"></div>
+              <span style="font-size:12px;color:#1677ff;margin-left:4px">已开启</span>
+            </div>
+            <div class="form-row">
+              <label class="form-label">WebRTC</label>
+              <div class="toggle-switch"></div>
+              <span style="font-size:12px;color:#999;margin-left:4px">已关闭</span>
+            </div>
+            <div class="form-row">
+              <label class="form-label">语言</label>
+              <select class="form-control">
+                <option>zh-CN (简体中文)</option>
+                <option>en-US (英语)</option>
+                <option>ja-JP (日语)</option>
+                <option>ko-KR (韩语)</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-label">时区</label>
+              <select class="form-control">
+                <option>Asia/Shanghai (UTC+8)</option>
+                <option>America/New_York (UTC-5)</option>
+                <option>Europe/London (UTC+0)</option>
+                <option>Asia/Tokyo (UTC+9)</option>
+              </select>
+            </div>
+          </div>
+          <div class="dialog-footer">
+            <button class="btn-cancel">取消</button>
+            <button class="btn-save">保存配置</button>
+          </div>
+        </div>
+      </div>
     </div>
-  </body>
+  </div>
+</div>
+
+</body>
 </html>
