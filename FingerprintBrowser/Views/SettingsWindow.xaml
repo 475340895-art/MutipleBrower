@@ -5,7 +5,7 @@
         Title="设置"
         Height="450" Width="500"
         WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource RegionBrush}">
+        Background="#f5f6fa">
     
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -17,57 +17,60 @@
         </Grid.RowDefinitions>
         
         <!-- Theme -->
-        <GroupBox Grid.Row="0" Header="外观设置" Margin="0,0,0,15">
+        <GroupBox Grid.Row="0" Header="外观设置" Margin="0,0,0,15" Foreground="#333">
             <StackPanel Margin="10">
                 <StackPanel Orientation="Horizontal" Margin="0,5">
-                    <TextBlock Text="主题：" Width="100" VerticalAlignment="Center"/>
+                    <TextBlock Text="主题：" Width="100" VerticalAlignment="Center" Foreground="#666"/>
                     <ComboBox x:Name="ThemeCombo" Width="200" SelectionChanged="ThemeCombo_SelectionChanged">
-                        <ComboBoxItem Content="深色主题" IsSelected="True"/>
-                        <ComboBoxItem Content="浅色主题"/>
-                        <ComboBoxItem Content="深蓝主题"/>
+                        <ComboBoxItem Content="浅色主题" IsSelected="True"/>
+                        <ComboBoxItem Content="深色主题"/>
                     </ComboBox>
                 </StackPanel>
             </StackPanel>
         </GroupBox>
         
         <!-- Browser -->
-        <GroupBox Grid.Row="1" Header="浏览器设置" Margin="0,0,0,15">
+        <GroupBox Grid.Row="1" Header="浏览器设置" Margin="0,0,0,15" Foreground="#333">
             <StackPanel Margin="10">
                 <StackPanel Orientation="Horizontal" Margin="0,5">
-                    <TextBlock Text="启动延迟(秒)：" Width="100" VerticalAlignment="Center"/>
+                    <TextBlock Text="启动延迟(秒)：" Width="110" VerticalAlignment="Center" Foreground="#666"/>
                     <hc:NumericUpDown x:Name="StartupDelayBox" Width="100" Minimum="0" Maximum="30" Value="2"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,5">
-                    <TextBlock Text="最大并发数：" Width="100" VerticalAlignment="Center"/>
+                    <TextBlock Text="最大并发数：" Width="110" VerticalAlignment="Center" Foreground="#666"/>
                     <hc:NumericUpDown x:Name="MaxConcurrencyBox" Width="100" Minimum="1" Maximum="20" Value="5"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,5">
-                    <TextBlock Text="关闭确认：" Width="100" VerticalAlignment="Center"/>
-                    <CheckBox x:Name="CloseConfirmBox" Content="关闭时提示确认"/>
+                    <TextBlock Text="关闭确认：" Width="110" VerticalAlignment="Center" Foreground="#666"/>
+                    <CheckBox x:Name="CloseConfirmBox" Content="关闭时提示确认" IsChecked="True"/>
                 </StackPanel>
             </StackPanel>
         </GroupBox>
         
         <!-- Data -->
-        <GroupBox Grid.Row="2" Header="数据管理" Margin="0,0,0,15">
+        <GroupBox Grid.Row="2" Header="数据管理" Margin="0,0,0,15" Foreground="#333">
             <StackPanel Margin="10">
                 <StackPanel Orientation="Horizontal" Margin="0,5">
-                    <TextBlock Text="数据目录：" Width="100" VerticalAlignment="Center"/>
+                    <TextBlock Text="数据目录：" Width="110" VerticalAlignment="Center" Foreground="#666"/>
                     <TextBox x:Name="DataPathBox" Width="200" IsReadOnly="True"/>
-                    <Button Content="浏览" Width="60" Height="28" Margin="10,0,0,0" Click="BrowseDataPath_Click"/>
+                    <Button Content="浏览" Width="60" Height="28" Margin="10,0,0,0" Click="BrowseDataPath_Click"
+                            Background="#1677ff" Foreground="White" BorderBrush="{x:Null}" Cursor="Hand"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,5">
-                    <TextBlock Text="浏览器缓存：" Width="100" VerticalAlignment="Center"/>
+                    <TextBlock Text="浏览器缓存：" Width="110" VerticalAlignment="Center" Foreground="#666"/>
                     <TextBox x:Name="CacheSizeBox" Width="200" IsReadOnly="True"/>
                 </StackPanel>
-                <Button Content="清理缓存" Width="100" Height="28" HorizontalAlignment="Left" Margin="100,5,0,0" Click="ClearCache_Click"/>
+                <Button Content="清理缓存" Width="100" Height="28" HorizontalAlignment="Left" Margin="110,5,0,0" 
+                        Click="ClearCache_Click" Background="White" Foreground="#ff4d4f" BorderBrush="#ff4d4f" Cursor="Hand"/>
             </StackPanel>
         </GroupBox>
         
         <!-- Buttons -->
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="保存" Width="100" Height="32" Style="{StaticResource ButtonPrimary}" Click="BtnSave_Click"/>
-            <Button Content="取消" Width="100" Height="32" Margin="10,0,0,0" Click="BtnCancel_Click"/>
+            <Button Content="保存" Width="100" Height="32" Background="#1677ff" Foreground="White" 
+                    BorderBrush="{x:Null}" Click="BtnSave_Click" Cursor="Hand"/>
+            <Button Content="取消" Width="100" Height="32" Margin="10,0,0,0"
+                    Background="White" Foreground="#666" BorderBrush="#d9d9d9" Click="BtnCancel_Click" Cursor="Hand"/>
         </StackPanel>
     </Grid>
 </hc:Window>

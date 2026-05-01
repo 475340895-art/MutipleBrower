@@ -1,50 +1,56 @@
 using System.Windows;
 using FingerprintBrowser.Models;
 
-namespace FingerprintBrowser.Views;
-
-public partial class ProxyWindow : HandyControl.Controls.Window
+namespace FingerprintBrowser.Views
 {
-    public ProxyWindow()
+    public partial class ProxyWindow : HandyControl.Controls.Window
     {
-        InitializeComponent();
-    }
-
-    private void AddButton_Click(object sender, RoutedEventArgs e)
-    {
-        var host = HostTextBox?.Text?.Trim() ?? "";
-        var portStr = PortTextBox?.Text?.Trim() ?? "";
-        var name = NameTextBox?.Text?.Trim() ?? "";
-        
-        if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(portStr))
+        public ProxyWindow()
         {
-            HandyControl.Controls.MessageBox.Show("请输入代理地址和端口", "提示");
-            return;
+            InitializeComponent();
         }
 
-        if (!int.TryParse(portStr, out var port))
+        private void BtnAdd_Click(object sender, RoutedEventArgs e)
         {
-            HandyControl.Controls.MessageBox.Show("端口必须是数字", "提示");
-            return;
+            var dialog = new AddProxyWindow { Owner = this };
+            if (dialog.ShowDialog() == true && dialog.Result != null)
+            {
+                // Add to grid
+                var list = ProxyGrid.ItemsSource as System.Collections.Generic.List<ProxyConfig>;
+                if (list != null)
+                {
+                    list.Add(dialog.Result);
+                    ProxyGrid.Items.Refresh();
+                }
+            }
         }
 
-        var proxyType = ProxyTypeComboBox?.SelectedIndex ?? 0;
-        // Proxy will be added via database
-        HandyControl.Controls.MessageBox.Show("代理添加功能需要数据库支持", "提示");
-    }
+        private void BtnTest_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("代理测试功能开发中", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
 
-    private void TestButton_Click(object sender, RoutedEventArgs e)
-    {
-        HandyControl.Controls.MessageBox.Show("代理测试功能", "提示");
-    }
+        private void BtnDelete_Click(object sender, RoutedEventArgs e)
+        {
+            if (ProxyGrid.SelectedItem is ProxyConfig proxy)
+            {
+                var result = MessageBox.Show($"确认删除代理 {proxy.Host}?", "确认", 
+                    MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result == MessageBoxResult.Yes)
+                {
+                    var list = ProxyGrid.ItemsSource as System.Collections.Generic.List<ProxyConfig>;
+                    if (list != null)
+                    {
+                        list.Remove(proxy);
+                        ProxyGrid.Items.Refresh();
+                    }
+                }
+            }
+        }
 
-    private void ImportButton_Click(object sender, RoutedEventArgs e)
-    {
-        HandyControl.Controls.MessageBox.Show("批量导入功能", "提示");
-    }
-
-    private void CloseButton_Click(object sender, RoutedEventArgs e)
-    {
-        Close();
+        private void BtnImport_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("批量导入功能开发中", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
 }

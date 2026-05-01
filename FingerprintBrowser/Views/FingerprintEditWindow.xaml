@@ -1,0 +1,100 @@
+<Window x:Class="FingerprintBrowser.Views.FingerprintEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        Title="指纹配置" Width="560" Height="680"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#f5f6fa"
+        ShowInTaskbar="False">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="浏览器指纹" FontSize="13" Foreground="#999" Margin="0,0,0,4"/>
+                <TextBox x:Name="FingerprintBox" IsReadOnly="True" Background="#f0f0f0" Margin="0,0,0,20"/>
+
+                <TextBlock Text="UserAgent" FontSize="13" Foreground="#666" Margin="0,0,0,4"/>
+                <ComboBox x:Name="UABox" SelectedIndex="0" Margin="0,0,0,16">
+                    <ComboBoxItem Content="Chrome 120 / Win10"/>
+                    <ComboBoxItem Content="Chrome 119 / Win11"/>
+                    <ComboBoxItem Content="Chrome 120 / macOS"/>
+                    <ComboBoxItem Content="Firefox 121 / Win10"/>
+                </ComboBox>
+
+                <TextBlock Text="屏幕分辨率" FontSize="13" Foreground="#666" Margin="0,0,0,4"/>
+                <ComboBox x:Name="ResolutionBox" SelectedIndex="0" Margin="0,0,0,16">
+                    <ComboBoxItem Content="1920x1080"/>
+                    <ComboBoxItem Content="1366x768"/>
+                    <ComboBoxItem Content="1536x864"/>
+                    <ComboBoxItem Content="2560x1440"/>
+                </ComboBox>
+
+                <TextBlock Text="WebGL Vendor" FontSize="13" Foreground="#666" Margin="0,0,0,4"/>
+                <ComboBox x:Name="WebGLVendorBox" SelectedIndex="0" Margin="0,0,0,16">
+                    <ComboBoxItem Content="Google Inc. (Intel)"/>
+                    <ComboBoxItem Content="Google Inc. (NVIDIA)"/>
+                    <ComboBoxItem Content="Google Inc. (AMD)"/>
+                </ComboBox>
+
+                <TextBlock Text="WebGL Renderer" FontSize="13" Foreground="#666" Margin="0,0,0,4"/>
+                <ComboBox x:Name="WebGLRendererBox" SelectedIndex="0" Margin="0,0,0,16">
+                    <ComboBoxItem Content="ANGLE (Intel, Mesa Intel(R) UHD Graphics 630)"/>
+                    <ComboBoxItem Content="ANGLE (NVIDIA, GeForce GTX 1060)"/>
+                    <ComboBoxItem Content="ANGLE (AMD, Radeon RX 580)"/>
+                </ComboBox>
+
+                <TextBlock Text="Canvas 噪声等级" FontSize="13" Foreground="#666" Margin="0,0,0,4"/>
+                <Slider x:Name="CanvasNoiseSlider" Minimum="0" Maximum="100" Value="30" 
+                        hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Top"
+                        TickFrequency="10" IsSnapToTickEnabled="True" Margin="0,0,0,20"/>
+
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="AudioContext" FontSize="13" Foreground="#666" Margin="0,0,0,4"/>
+                        <CheckBox x:Name="AudioCtxCheck" Content="启用噪声" IsChecked="True"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="WebRTC" FontSize="13" Foreground="#666" Margin="0,0,0,4"/>
+                        <CheckBox x:Name="WebRTCCheck" Content="启用" IsChecked="True"/>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Text="语言" FontSize="13" Foreground="#666" Margin="0,0,0,4"/>
+                <ComboBox x:Name="LangBox" SelectedIndex="0" Margin="0,0,0,16">
+                    <ComboBoxItem Content="zh-CN"/>
+                    <ComboBoxItem Content="en-US"/>
+                    <ComboBoxItem Content="ja-JP"/>
+                    <ComboBoxItem Content="ko-KR"/>
+                    <ComboBoxItem Content="de-DE"/>
+                </ComboBox>
+
+                <TextBlock Text="时区" FontSize="13" Foreground="#666" Margin="0,0,0,4"/>
+                <ComboBox x:Name="TimezoneBox" SelectedIndex="0" Margin="0,0,0,16">
+                    <ComboBoxItem Content="Asia/Shanghai (UTC+8)"/>
+                    <ComboBoxItem Content="America/New_York (UTC-5)"/>
+                    <ComboBoxItem Content="Europe/London (UTC+0)"/>
+                    <ComboBoxItem Content="Asia/Tokyo (UTC+9)"/>
+                </ComboBox>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Width="80" Height="36" Margin="0,0,12,0"
+                    Background="White" Foreground="#666" BorderBrush="#d9d9d9"
+                    Click="Cancel_Click" Cursor="Hand">取消</Button>
+            <Button Width="80" Height="36"
+                    Background="#1677ff" Foreground="White" BorderBrush="{x:Null}"
+                    Click="Save_Click" Cursor="Hand">保存</Button>
+        </StackPanel>
+    </Grid>
+</Window>

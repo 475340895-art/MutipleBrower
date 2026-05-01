@@ -1,0 +1,53 @@
+<Window x:Class="FingerprintBrowser.Views.AddGroupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        Title="新建分组" Width="380" Height="220"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#f5f6fa"
+        ShowInTaskbar="False">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="分组名称" FontSize="13" Foreground="#666" Margin="0,0,0,4"/>
+            <TextBox x:Name="GroupNameBox" hc:InfoElement.PlaceholderText="请输入分组名称" Margin="0,0,0,16"/>
+
+            <TextBlock Text="分组颜色" FontSize="13" Foreground="#666" Margin="0,0,0,8"/>
+            <StackPanel x:Name="ColorPanel" Orientation="Horizontal">
+                <RadioButton x:Name="ColorRed" GroupName="GroupColor" Margin="0,0,12,0" VerticalAlignment="Center">
+                    <Ellipse Width="16" Height="16" Fill="#f5222d"/>
+                </RadioButton>
+                <RadioButton x:Name="ColorBlue" GroupName="GroupColor" IsChecked="True" Margin="0,0,12,0" VerticalAlignment="Center">
+                    <Ellipse Width="16" Height="16" Fill="#1677ff"/>
+                </RadioButton>
+                <RadioButton x:Name="ColorGreen" GroupName="GroupColor" Margin="0,0,12,0" VerticalAlignment="Center">
+                    <Ellipse Width="16" Height="16" Fill="#52c41a"/>
+                </RadioButton>
+                <RadioButton x:Name="ColorOrange" GroupName="GroupColor" Margin="0,0,12,0" VerticalAlignment="Center">
+                    <Ellipse Width="16" Height="16" Fill="#fa8c16"/>
+                </RadioButton>
+                <RadioButton x:Name="ColorPurple" GroupName="GroupColor" Margin="0,0,12,0" VerticalAlignment="Center">
+                    <Ellipse Width="16" Height="16" Fill="#722ed1"/>
+                </RadioButton>
+                <RadioButton x:Name="ColorCyan" GroupName="GroupColor" VerticalAlignment="Center">
+                    <Ellipse Width="16" Height="16" Fill="#13c2c2"/>
+                </RadioButton>
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Width="80" Height="36" Margin="0,0,12,0"
+                    Background="White" Foreground="#666" BorderBrush="#d9d9d9"
+                    Click="Cancel_Click" Cursor="Hand">取消</Button>
+            <Button Width="80" Height="36"
+                    Background="#1677ff" Foreground="White" BorderBrush="{x:Null}"
+                    Click="Save_Click" Cursor="Hand">保存</Button>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -27,7 +27,7 @@ public partial class SplashWindow : HandyControl.Controls.Window
     
     public void SetProgress(int value)
     {
-        Dispatcher.Invoke(() => ProgressBar.Value = value);
+        Dispatcher.Invoke(() => LoadingBar.Value = value);
     }
     
     private void Timer_Tick(object? sender, EventArgs e)
@@ -38,13 +38,13 @@ public partial class SplashWindow : HandyControl.Controls.Window
             _timer.Stop();
             return;
         }
-        ProgressBar.Value = _progress;
+        LoadingBar.Value = _progress;
     }
     
     public void Complete()
     {
         _timer.Stop();
-        ProgressBar.Value = 100;
+        LoadingBar.Value = 100;
         StatusText.Text = "启动完成";
     }
 }

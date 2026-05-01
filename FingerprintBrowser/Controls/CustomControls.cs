@@ -32,10 +32,10 @@ public static class StatusIndicatorFactory
     {
         var brush = status switch
         {
-            ProxyStatus.Available => Brushes.LimeGreen,
-            ProxyStatus.Unavailable => Brushes.Red,
+            ProxyStatus.Normal => Brushes.LimeGreen,
+            ProxyStatus.Failed => Brushes.Red,
             ProxyStatus.Testing => Brushes.Orange,
-            ProxyStatus.Unknown => Brushes.Gray,
+            ProxyStatus.Untested => Brushes.Gray,
             _ => Brushes.Gray
         };
 

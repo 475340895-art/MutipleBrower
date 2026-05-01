@@ -1,44 +1,22 @@
 <Application x:Class="FingerprintBrowser.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             StartupUri="Views/MainWindow.xaml"
-             Startup="Application_Startup"
-             Exit="Application_Exit">
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:conv="clr-namespace:FingerprintBrowser.Converters"
+             StartupUri="Views/MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/SkinDark.xaml"/>
+                <hc:ResourceDictionary/>
+                <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/SkinDefault.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/Theme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            
-            <!-- 自定义样式 -->
-            <SolidColorBrush x:Key="PrimaryBrush" Color="#667EEA"/>
-            <SolidColorBrush x:Key="SecondaryBrush" Color="#764BA2"/>
-            <SolidColorBrush x:Key="SuccessBrush" Color="#10B981"/>
-            <SolidColorBrush x:Key="WarningBrush" Color="#F59E0B"/>
-            <SolidColorBrush x:Key="DangerBrush" Color="#EF4444"/>
-            
-            <!-- 渐变画刷 -->
-            <LinearGradientBrush x:Key="PrimaryGradientBrush" StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#667EEA" Offset="0"/>
-                <GradientStop Color="#764BA2" Offset="1"/>
-            </LinearGradientBrush>
-            
-            <!-- 按钮样式 -->
-            <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource ButtonPrimary}">
-                <Setter Property="Background" Value="{StaticResource PrimaryGradientBrush}"/>
-                <Setter Property="Foreground" Value="White"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Padding" Value="16,8"/>
-            </Style>
-            
-            <!-- 卡片样式 -->
-            <Style x:Key="CardBorder" TargetType="Border">
-                <Setter Property="Background" Value="#252536"/>
-                <Setter Property="CornerRadius" Value="8"/>
-                <Setter Property="Padding" Value="16"/>
-                <Setter Property="Margin" Value="0,0,0,10"/>
-            </Style>
+            <conv:BrowserStatusToBrushConverter x:Key="StatusToBrushConverter"/>
+            <conv:BrowserStatusToTextConverter x:Key="StatusToTextConverter"/>
+            <conv:ProxyStatusToBrushConverter x:Key="ProxyStatusToBrushConverter"/>
+            <conv:ProxyStatusToTextConverter x:Key="ProxyStatusToTextConverter"/>
+            <conv:StringToColorConverter x:Key="StringToColorConverter"/>
+            <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

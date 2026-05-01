@@ -1,77 +1,88 @@
-using Microsoft.Playwright;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using FingerprintBrowser.Models;
+using Microsoft.Playwright;
 
-namespace FingerprintBrowser.Services;
-
-public class PlaywrightService
+namespace FingerprintBrowser.Services
 {
-    private static PlaywrightService? _instance;
-    public static PlaywrightService Instance => _instance ??= new PlaywrightService();
-    
-    private IPlaywright? _playwright;
-    private IBrowser? _browser;
-    private readonly SemaphoreSlim _semaphore = new(5);
-    
-    public async Task InitializeAsync()
+    public class PlaywrightService : IDisposable
     {
-        _playwright = await Microsoft.Playwright.Playwright.CreateAsync();
-    }
-    
-    public async Task<IBrowser> LaunchBrowserAsync(BrowserEnvironment env)
-    {
-        if (_playwright == null) await InitializeAsync();
-        if (_browser == null)
+        private IPlaywright? _playwright;
+        private IBrowser? _browser;
+        private readonly Dictionary<int, IBrowserContext> _contexts = new();
+
+        public async Task InitializeAsync()
         {
-            _browser = await _playwright!.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+            _playwright = await Playwright.CreateAsync();
+        }
+
+        public async Task<IBrowserContext> CreateContextAsync(BrowserEnvironment env)
+        {
+            if (_playwright == null)
+                await InitializeAsync();
+
+            _browser ??= await _playwright!.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {
-                Headless = false,
-                Args = new[] { "--disable-blink-features=AutomationControlled" }
+                Headless = false
             });
+
+            var contextOptions = new BrowserNewContextOptions
+            {
+                ViewportSize = new ViewportSize
+                {
+                    Width = int.Parse(env.Resolution.Split('x')[0]),
+                    Height = int.Parse(env.Resolution.Split('x')[1])
+                },
+                UserAgent = env.UserAgent,
+                Locale = env.Languages ?? "en-US",
+                TimezoneId = env.Timezone ?? "America/New_York",
+                JavaScriptEnabled = env.EnableJavaScript
+            };
+
+            if (env.ProxyType != ProxyType.None && !string.IsNullOrEmpty(env.ProxyHost))
+            {
+                contextOptions.Proxy = new Proxy
+                {
+                    Server = $"{env.ProxyType.ToString().ToLower()}://{env.ProxyHost}:{env.ProxyPort}"
+                };
+                if (!string.IsNullOrEmpty(env.ProxyUsername))
+                    contextOptions.Proxy.Username = env.ProxyUsername;
+                if (!string.IsNullOrEmpty(env.ProxyPassword))
+                    contextOptions.Proxy.Password = env.ProxyPassword;
+            }
+
+            var context = await _browser.NewContextAsync(contextOptions);
+
+            if (!env.EnableWebRTC)
+            {
+                await context.GrantPermissionsAsync(Array.Empty<string>());
+            }
+
+            _contexts[env.Id] = context;
+            return context;
         }
-        return _browser;
-    }
-    
-    public async Task<IBrowserContext> CreateContextAsync(BrowserEnvironment env)
-    {
-        var browser = await LaunchBrowserAsync(env);
-        var context = await browser.NewContextAsync(new BrowserNewContextOptions
+
+        public async Task CloseContextAsync(int envId)
         {
-            UserAgent = env.UserAgent,
-            ViewportSize = ParseResolution(env.Resolution),
-            Locale = env.Languages?.Split(',').FirstOrDefault() ?? "en-US",
-            TimezoneId = env.Timezone ?? "UTC"
-        });
-        return context;
-    }
-    
-    public async Task CloseContextAsync(IBrowserContext context)
-    {
-        await context.CloseAsync();
-    }
-    
-    public async Task<IPage> OpenUrlAsync(IBrowserContext context, string url)
-    {
-        var page = await context.NewPageAsync();
-        await page.GotoAsync(url);
-        return page;
-    }
-    
-    private static ViewportSize? ParseResolution(string? resolution)
-    {
-        if (string.IsNullOrEmpty(resolution)) return null;
-        var parts = resolution.Split('x');
-        if (parts.Length == 2 && int.TryParse(parts[0], out var w) && int.TryParse(parts[1], out var h))
-            return new ViewportSize { Width = w, Height = h };
-        return null;
-    }
-    
-    public async ValueTask DisposeAsync()
-    {
-        if (_browser != null)
-        {
-            await _browser.CloseAsync();
-            _browser = null;
+            if (_contexts.TryGetValue(envId, out var context))
+            {
+                await context.CloseAsync();
+                _contexts.Remove(envId);
+            }
         }
-        _playwright?.Dispose();
+
+        public bool IsContextRunning(int envId) => _contexts.ContainsKey(envId);
+
+        public void Dispose()
+        {
+            foreach (var ctx in _contexts.Values)
+            {
+                try { ctx.CloseAsync().Wait(); } catch { }
+            }
+            _contexts.Clear();
+            try { _browser?.CloseAsync().Wait(); } catch { }
+            _playwright?.Dispose();
+        }
     }
 }

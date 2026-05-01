@@ -5,47 +5,41 @@
         Title="代理管理"
         Height="550" Width="900"
         WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource RegionBrush}">
+        Background="#f5f6fa">
     
-    <Grid Margin="15">
+    <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         
         <!-- Toolbar -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
-            <Button x:Name="BtnAdd" Content="添加" Width="80" Height="32" Style="{StaticResource ButtonPrimary}" Click="BtnAdd_Click"/>
-            <Button x:Name="BtnDelete" Content="删除" Width="80" Height="32" Margin="10,0,0,0" Click="BtnDelete_Click"/>
-            <Button x:Name="BtnTest" Content="测试" Width="80" Height="32" Margin="10,0,0,0" Click="BtnTest_Click"/>
-            <Button x:Name="BtnImport" Content="批量导入" Width="90" Height="32" Margin="10,0,0,0" Click="BtnImport_Click"/>
-            <Button x:Name="BtnExport" Content="导出" Width="80" Height="32" Margin="10,0,0,0" Click="BtnExport_Click"/>
-            <Button x:Name="BtnClose" Content="关闭" Width="80" Height="32" Margin="10,0,0,0" Click="BtnClose_Click"/>
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
+            <Button Content="添加代理" Width="90" Height="32" Background="#1677ff" Foreground="White" 
+                    BorderBrush="{x:Null}" Click="BtnAdd_Click" Cursor="Hand"/>
+            <Button Content="测试选中" Width="90" Height="32" Margin="8,0,0,0" 
+                    Background="White" Foreground="#1677ff" BorderBrush="#1677ff" Click="BtnTest_Click" Cursor="Hand"/>
+            <Button Content="删除选中" Width="90" Height="32" Margin="8,0,0,0"
+                    Background="White" Foreground="#ff4d4f" BorderBrush="#ff4d4f" Click="BtnDelete_Click" Cursor="Hand"/>
+            <Button Content="批量导入" Width="90" Height="32" Margin="8,0,0,0"
+                    Background="White" Foreground="#666" BorderBrush="#d9d9d9" Click="BtnImport_Click" Cursor="Hand"/>
         </StackPanel>
         
         <!-- Proxy List -->
         <DataGrid x:Name="ProxyGrid" Grid.Row="1" AutoGenerateColumns="False" 
                   CanUserAddRows="False" IsReadOnly="True"
                   SelectionMode="Single"
+                  HeadersVisibility="Column"
                   GridLinesVisibility="Horizontal"
-                  HeadersVisibility="Column">
+                  BorderBrush="#e8e8e8" Background="White"
+                  AlternatingRowBackground="#fafafa">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
                 <DataGridTextColumn Header="类型" Binding="{Binding Type}" Width="80"/>
-                <DataGridTextColumn Header="主机" Binding="{Binding Host}" Width="150"/>
+                <DataGridTextColumn Header="服务器" Binding="{Binding Host}" Width="*"/>
                 <DataGridTextColumn Header="端口" Binding="{Binding Port}" Width="80"/>
                 <DataGridTextColumn Header="用户名" Binding="{Binding Username}" Width="100"/>
-                <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*"/>
-                <DataGridTextColumn Header="延迟" Binding="{Binding Latency}" Width="80"/>
                 <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="80"/>
             </DataGrid.Columns>
         </DataGrid>
-        
-        <!-- Status Bar -->
-        <Border Grid.Row="2" Background="{DynamicResource SecondaryRegionBrush}" 
-                CornerRadius="4" Padding="10,5" Margin="0,15,0,0">
-            <TextBlock x:Name="StatusText" Text="就绪" Foreground="{DynamicResource PrimaryTextBrush}"/>
-        </Border>
     </Grid>
 </hc:Window>

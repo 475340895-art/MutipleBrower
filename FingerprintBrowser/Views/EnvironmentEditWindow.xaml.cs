@@ -1,63 +1,71 @@
 using System.Windows;
 using FingerprintBrowser.Models;
 
-namespace FingerprintBrowser.Views;
-
-public partial class EnvironmentEditWindow : HandyControl.Controls.Window
+namespace FingerprintBrowser.Views
 {
-    public BrowserEnvironment? Result { get; private set;     public void SetEnvironment(BrowserEnvironment env)
+    public partial class EnvironmentEditWindow : Window
     {
-        Result = env;
-        DataContext = Result;
-    }
-}
+        private BrowserEnvironment? _editTarget;
 
-    public EnvironmentEditWindow(BrowserEnvironment? env = null)
-    {
-        InitializeComponent();
-        Result = env ?? new BrowserEnvironment();
-        DataContext = Result;
-    }
-
-    private void SaveButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(Result.Name))
+        public EnvironmentEditWindow()
         {
-            HandyControl.Controls.MessageBox.Show("请输入环境名称", "提示");
-            return;
+            InitializeComponent();
+            Title = "新建环境";
+            WebRTCCheck.IsChecked = true;
+            JSCheck.IsChecked = true;
+            CookieCheck.IsChecked = true;
+            ResolutionBox.Text = "1920x1080";
+            UABox.Text = "Chrome 120 / Win10";
         }
-        DialogResult = true;
-        Close();
-    }
 
-    private void CancelButton_Click(object sender, RoutedEventArgs e)
-    {
-        DialogResult = false;
-        Close();
-    }
-
-    private void RandomizeButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (Result != null)
+        public void SetEnvironment(BrowserEnvironment env)
         {
-            var random = new Random();
-            Result.UserAgent = GenerateRandomUserAgent();
-            Result.Languages = "en-US,en;q=0.9";
-            Result.WebGLVendor = new[] { "Intel Inc.", "NVIDIA Corporation", "AMD" }[random.Next(3)];
-            Result.WebGLRenderer = new[] { "Intel Iris OpenGL Engine", "NVIDIA GeForce GTX 1060", "AMD Radeon Pro 5500M" }[random.Next(3)];
-            DataContext = null;
-            DataContext = Result;
+            _editTarget = env;
+            Title = "编辑环境";
+            NameBox.Text = env.Name;
+            RemarksBox.Text = env.Remarks ?? "";
+            ProxyHostBox.Text = env.ProxyHost ?? "";
+            ProxyPortBox.Text = env.ProxyPort > 0 ? env.ProxyPort.ToString() : "";
+            ProxyUserBox.Text = env.ProxyUsername ?? "";
+            WebRTCCheck.IsChecked = env.EnableWebRTC;
+            JSCheck.IsChecked = env.EnableJavaScript;
+            CookieCheck.IsChecked = env.EnableCookies;
+            ResolutionBox.Text = env.Resolution;
+            UABox.Text = env.UserAgent ?? "";
         }
-    }
 
-    private string GenerateRandomUserAgent()
-    {
-        var agents = new[]
+        public BrowserEnvironment GetEnvironment()
         {
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
-        };
-        return agents[new Random().Next(agents.Length)];
+            var env = _editTarget ?? new BrowserEnvironment();
+            env.Name = NameBox.Text?.Trim() ?? "未命名";
+            env.Remarks = RemarksBox.Text?.Trim();
+            env.ProxyHost = string.IsNullOrWhiteSpace(ProxyHostBox.Text) ? null : ProxyHostBox.Text.Trim();
+            env.ProxyPort = int.TryParse(ProxyPortBox.Text, out var port) ? port : 0;
+            env.ProxyUsername = string.IsNullOrWhiteSpace(ProxyUserBox.Text) ? null : ProxyUserBox.Text.Trim();
+            env.EnableWebRTC = WebRTCCheck.IsChecked == true;
+            env.EnableJavaScript = JSCheck.IsChecked == true;
+            env.EnableCookies = CookieCheck.IsChecked == true;
+            env.Resolution = string.IsNullOrWhiteSpace(ResolutionBox.Text) ? "1920x1080" : ResolutionBox.Text.Trim();
+            env.UserAgent = string.IsNullOrWhiteSpace(UABox.Text) ? null : UABox.Text.Trim();
+            return env;
+        }
+
+        private void Save_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(NameBox.Text))
+            {
+                MessageBox.Show("请输入环境名称", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            DialogResult = true;
+            Close();
+        }
+
+        private void Cancel_Click(object sender, RoutedEventArgs e)
+        {
+            DialogResult = false;
+            Close();
+        }
     }
 }

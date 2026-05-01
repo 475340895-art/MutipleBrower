@@ -40,7 +40,7 @@
                            Foreground="#9999AA" HorizontalAlignment="Center" Margin="0,0,0,30"/>
                 
                 <!-- 加载动画 - 使用标准 ProgressBar -->
-                <ProgressBar x:Name="LoadingBar" IsIndeterminate="True" Width="200" Height="4"
+                <ProgressBar x:Name="LoadingBar" IsIndeterminate="False" Minimum="0" Maximum="100" Width="200" Height="4"
                              Foreground="#667EEA" Background="#333355"/>
                 
                 <!-- 状态文本 -->
